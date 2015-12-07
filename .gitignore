@@ -1,0 +1,10 @@
+*.o
+lex.c
+lex.yy.c
+bison.c
+tok.h
+occ.tab.c
+occ.tab.h
+occ.output
+occ
+compiled
