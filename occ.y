@@ -14,7 +14,12 @@ extern "C" FILE *yyin;
   double	float_val;
   string*	op_val;
   bool      bool_val;
-  AST*      tree_elem;
+  AST*      ast_elem;
+  Statement* statement;
+  Expression* expresion;
+  Identifier* identifier;
+
+  vector<Statement*>* statements;
 }
 
 %start	input 
@@ -23,9 +28,10 @@ extern "C" FILE *yyin;
 %token	<op_val>	IDENTIFIER
 %token	<op_val>	STRING_LITERAL
 %token  <float_val>     FLOAT_LITERAL
-%type	<tree_elem>	exp
-%type	<tree_elem>	statement
-%type	<tree_elem>	statements
+%type	<statement>	statement
+%type	<statements>	statements
+%type	<expresion>	exp
+//%type	<identifier>	identifier
 %type	<bool_val>	RECS
 
 // %left associative a + b + c = (a + b) + c
@@ -59,31 +65,29 @@ extern "C" FILE *yyin;
 
 %%
 
-input:		/* empty */
-        //statements {ParseEssentials::treeRoot = $1 ;}
-        //statement { cout << ($1)->parseTree() << endl; delete $1; }
-        statements { ParseEssentials::treeRoot = $1 ; cout << "/*\n" << ($1)->printTree() << "\n*/" << endl; }
+input:  /* empty */
+        statements      { ParseEssentials::toplevel_statements.insert(ParseEssentials::toplevel_statements.end(), $1->begin(), $1->end()); }
 		;
 
-statement:   LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new AST(VariableDeclaration, new AST(Identifier, *($3)), $5, $2); }
-         |   exp SEMIC2 { $$ = new AST($1, NULL) ; }
+statements:     statement               { $$ = new vector<Statement*>{$1}; }
+          |     statements statement    { $1->push_back($2);  $$ = $1; }
+
+statement:   LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new Let(new Identifier(*$3), $5); }
+         |   exp SEMIC2 { $$ = $1; }
          ;
 
-statements:     statement               { $$ = $1; }
-          |     statement statements    { $$ = new AST( $1, $2 ); }
-
-exp:		INTEGER_LITERAL	{ $$ = new AST($1); }
-        |   STRING_LITERAL	{ $$ = new AST(StringLiteral, *($1) ); }
-        |   FLOAT_LITERAL	{ $$ = new AST($1); }
-        | exp PLUS exp	{ $$ = new AST(FunctionCall, new AST(FunctionCall, new AST(Identifier, FUN_NAME_PLUS), $1), $3); }
-        | exp MINUS exp	{ $$ = new AST(FunctionCall, new AST(FunctionCall, new AST(Identifier, FUN_NAME_MINUS), $1), $3); }
-        | exp DIV exp	{ $$ = new AST(FunctionCall, new AST(FunctionCall, new AST(Identifier, FUN_NAME_DIV), $1), $3); }
-        | exp MULT exp	{ $$ = new AST(FunctionCall, new AST(FunctionCall, new AST(Identifier, FUN_NAME_MULT), $1), $3); }
-        | exp EQUALS exp    { $$ = new AST(FunctionCall, new AST(FunctionCall, new AST(Identifier, FUN_NAME_EQUALS), $1), $3); }
-        | IDENTIFIER            { $$ = new AST(Identifier, *($1)); }
-        | exp exp   %prec FUNAPPLY { $$ = new AST(FunctionCall, new AST(*($1)), $2); }
-        | IF exp THEN exp ELSE exp { $$ = new AST($2, $4, $6); }
-        | FUNCTION exp INTO exp { $$ = new AST(FunctionLiteral, new AST(*($2)), $4); }
+exp:        INTEGER_LITERAL	{ $$ = new Integer($1); }
+        |   STRING_LITERAL	{ $$ = new String( *($1) ); }
+        |   FLOAT_LITERAL	{ $$ = new Float($1); }
+        | exp PLUS exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("+"), $1) , $3); }
+        | exp MINUS exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("-"), $1) , $3); }
+        | exp DIV exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("/"), $1) , $3); }
+        | exp MULT exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("*"), $1) , $3); }
+        | exp EQUALS exp    { $$ = new FunctionCall( new FunctionCall(new Identifier("="), $1) , $3); }
+        | IDENTIFIER            { $$ = new Identifier( *$1 ); }
+        | exp exp   %prec FUNAPPLY { $$ = new FunctionCall($1, $2); }
+        | IF exp THEN exp ELSE exp { $$ = new Conditional($2, $4, $6); }
+        | FUNCTION IDENTIFIER INTO exp { $$ = new Function(new Identifier(*$2), $4);}
         | '(' exp ')'		{ $$ = $2; }
 		;
 

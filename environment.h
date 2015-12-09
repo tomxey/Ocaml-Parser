@@ -3,6 +3,12 @@
 
 #include <map>
 #include "value.h"
+#include "ast.h"
+
+class Identifier;
+class Value;
+class Type;
+class TypeDef;
 
 class Environment
 {

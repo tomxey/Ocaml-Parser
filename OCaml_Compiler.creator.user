@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.2.1, 2015-12-08T21:48:08. -->
+<!-- Written by QtCreator 3.2.1, 2015-12-09T21:57:42. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -161,7 +161,7 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments">test.ml</value>
+    <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments">data/test.ml</value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Executable">/home/tommy/workspaces/Bison/OCaml_Compiler/occ</value>
     <value type="bool" key="ProjectExplorer.CustomExecutableRunConfiguration.UseTerminal">false</value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.WorkingDirectory">%{buildDir}</value>
