@@ -6,62 +6,83 @@
 #include <ostream>
 #include <iostream>
 #include "vartype.h"
+#include "value.h"
 #include "parseessentials.h"
 
-using namespace std;
+class AST{
 
-class VarType;
-
-enum SyntaxElement{
-    VariableDeclaration,
-    FunctionLiteral,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    FloatLiteral,
-    StringLiteral,
-    Conditional,
-    ConsecutiveStatements
 };
 
-class AST
-{
+class Statement : public AST{
+
+};
+
+class TypeDefAST : public Statement{
 public:
-    AST(SyntaxElement syntaxElement, AST* identifierTree, AST* argument, bool recursive = false);
-    AST(AST* conditionTree, AST* firstPath, AST* secondPath);
-    AST(AST* firstStatement, AST* secondStatement);
-    AST(int integerLiteral);
-    AST(double floatLiteral);
-    AST(SyntaxElement syntaxElement, string ident_or_string);
-    ~AST();
-
-    void init();
-
-    SyntaxElement syntaxElement;
-
-    string name; // declared variable name, called function name, variable name, function literal argument name, identifier etc...
-    AST* identifierTree; // or condition tree in case of "if"
-    AST* argument; // function argument, variable declaration value... etc..
-    AST* secondArgument; // needed for "if then else"
-    bool recursive; // if variable declaration is recursive
-
-    int integerLiteral; // integer literal, if any
-    double floatLiteral;
-
-    string printTree(int indents = 0) const;
-    string toString() const;
-
-    string parseTree(vector<string> recVariables = vector<string>());
-
-    VarType type;
-    VarType &determineType();
-
-    bool isReturnable();
 };
 
-inline std::ostream& operator <<(std::ostream& out, const AST& other){
-    cout << other.printTree() << endl;
-    return out;
-}
+class Expression : public Statement{
+
+};
+
+class Value : public Expression{
+
+};
+
+class Identifier : public Value{
+
+};
+
+class Let : public Statement{
+public:
+    Let(Identifier identifier, Expression expression): identifier(identifier), expression(expression){}
+
+    Identifier identifier;
+    Expression expression;
+};
+
+class LetIn : public Expression{
+    Let(Identifier identifier, Expression expression, Expression in_expression): identifier(identifier), expression(expression), in_expression(in_expression){}
+
+    Identifier identifier;
+    Expression expression;
+    Expression in_expression;
+};
+
+class FunctionCall : public Expression{
+
+};
+
+class MatchWith : public Expression{
+
+};
+
+class Function : public Value{
+
+};
+
+class ComplexValue : public Value{
+
+};
+
+class Primitive : public Value{
+
+};
+
+class Integer : public Primitive{
+
+};
+
+class Float : public Primitive{
+
+};
+
+class Bool : public Primitive{
+
+};
+
+class String : public Primitive{
+
+};
 
 #endif // AST_H

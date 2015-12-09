@@ -11,3 +11,5 @@ value.cpp
 value.h
 vartype.cpp
 vartype.h
+environment.h
+environment.cpp
