@@ -6,7 +6,31 @@
 #include <map>
 //#include "ast.h"
 
-class Type
+enum TypeEnum{
+    UNDETERMINED,
+    POLYMORPHIC,
+    COMPLEX,
+    FUNCTION_TYPE,
+    PRIMITIVE
+};
+
+class Type{
+public:
+    Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> aggregated_types = std::vector<Type>())
+        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), aggregated_types(aggregated_types){}
+
+    Type withExpected(Type expected_type);
+    Type getMoreGeneral(Type other_type);
+    Type getMoreSpecific(Type other_type);
+    bool relatedWith(Type other_type);
+
+    TypeEnum type_enum;
+    std::string type_name;
+    std::string constructor_name;
+    std::vector<Type> aggregated_types;
+};
+
+/*class Type
 {
 public:
 
@@ -31,16 +55,17 @@ class FunctionType : public Type{
 class PrimitiveType : public Type{
 
 };
+*/
 
 /** TYPE DEF BEGIN **/
 
 class TypeDef{
 public:
-    TypeDef(std::string type_name, std::vector<ComplexType> constructors = std::vector<ComplexType>())
+    TypeDef(std::string type_name, std::vector<Type> constructors = std::vector<Type>())
         :type_name(type_name), constructors(constructors){}
 
     std::string type_name;
-    std::vector<ComplexType> constructors; // ComplexTypes containing constructor names along with argument types
+    std::vector<Type> constructors; // ComplexTypes containing constructor names along with argument types
 };
 
 #endif // VARTYPE_H

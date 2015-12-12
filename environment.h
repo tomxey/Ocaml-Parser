@@ -2,6 +2,7 @@
 #define ENVIRONMENT_H
 
 #include <map>
+#include <vector>
 #include "value.h"
 #include "ast.h"
 
