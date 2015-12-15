@@ -72,4 +72,16 @@ bool Type::relatedWith(Type other_type)
     }
     else if(this->type_enum == PRIMITIVE && other_type.type_enum == PRIMITIVE && this->type_name == other_type.type_name) return true;
     else return false;
-} // related with
+}
+
+Type Type::withTypeSwapped(Type fromType, Type toType)
+{
+    if(*this == fromType) return toType;
+    else{
+        Type copy = *this;
+        for(unsigned int i = 0; i < aggregated_types.size(); ++i){
+            copy.aggregated_types[i] = aggregated_types[i].withTypeSwapped(fromType, toType);
+        }
+        return copy;
+    }
+}

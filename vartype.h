@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <ostream>
 //#include "ast.h"
 
 enum TypeEnum{
@@ -24,10 +25,30 @@ public:
     Type getMoreSpecific(Type other_type);
     bool relatedWith(Type other_type);
 
+    Type withTypeSwapped(Type fromType, Type toType);
+
     TypeEnum type_enum;
     std::string type_name;
     std::string constructor_name;
     std::vector<Type> aggregated_types;
+
+    friend std::ostream& operator<<(std::ostream& os, const Type& val){
+        if(val.type_enum == UNDETERMINED) os << "UNDETERMINED";
+        else if(val.type_enum == POLYMORPHIC) os << "POLYMORPHIC: " << val.type_name;
+        else if(val.type_enum == COMPLEX){
+            os << "COMPLEX: " << val.type_name << ' ' << val.constructor_name << ' ';
+            for(unsigned int i=0; i<val.aggregated_types.size(); ++i) os << val.aggregated_types[i];
+        }
+        else if(val.type_enum == FUNCTION_TYPE) os << "FUNCTION_TYPE: " << val.aggregated_types[0] << " -> " << val.aggregated_types[1];
+        else os << "PRIMITIVE: " << val.type_name;
+
+        return os;
+    }
+
+    bool operator==(const Type& other) const{
+        if(type_enum == other.type_enum && type_name == other.type_name && constructor_name == other.constructor_name && aggregated_types == other.aggregated_types) return true;
+        else return false;
+    }
 };
 
 /*class Type

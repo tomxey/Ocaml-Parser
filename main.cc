@@ -21,11 +21,20 @@ int main(int argc, char **argv)
   
   yyparse();
 
+  ParseEssentials::toplevel_environment.addValue(Identifier("print_int"), new BuiltIn_Function([](Value* arg)->Value* {std::cout << ((Integer*)arg)->value << std::endl; return arg;}, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int") ));
+
   std::cout << "Number of statements: " << ParseEssentials::toplevel_statements.size() << std::endl;
 
   for(Statement* statement : ParseEssentials::toplevel_statements){
       std::cout << "Next statement:" << std::endl;
       std::cout << statement->print(0) << std::endl;
+  }
+
+  std::cout << "---------Determine Types---------------" << std::endl;
+
+  for(Statement* statement : ParseEssentials::toplevel_statements){
+      std::cout << "Next statement:" << std::endl;
+      std::cout << statement->deduceType(ParseEssentials::toplevel_environment) << std::endl;
   }
 
   return 0;
