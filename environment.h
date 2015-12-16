@@ -28,6 +28,10 @@ public:
     int polymorphic_types_in_statement;
 
     void addValue(Identifier identifier, Value* value);
+    Value* getValue(Identifier identifier);
+
+    //void addFunctionArgument(Value* value);
+    //Value* acceptFunctionArgument();
 
     std::deque< std::pair<Identifier, Type> > identifier_types;
     //std::deque< std::pair<Identifier, Type> > identifier_types_rec;

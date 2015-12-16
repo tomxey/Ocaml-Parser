@@ -49,6 +49,10 @@ public:
         if(type_enum == other.type_enum && type_name == other.type_name && constructor_name == other.constructor_name && aggregated_types == other.aggregated_types) return true;
         else return false;
     }
+
+    bool operator!=(const Type& other) const{
+        return !this->operator ==(other);
+    }
 };
 
 /*class Type

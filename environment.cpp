@@ -63,3 +63,11 @@ void Environment::addValue(Identifier identifier, Value *value)
 {
     env.push_back(std::make_pair(identifier, value));
 }
+
+Value *Environment::getValue(Identifier identifier)
+{
+    for(auto iter = env.rbegin(); iter != env.rend(); ++iter){
+        if(iter->first.name == identifier.name) return iter->second;
+    }
+    return nullptr;
+}
