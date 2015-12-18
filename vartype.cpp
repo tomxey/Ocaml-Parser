@@ -8,6 +8,7 @@ Type Type::getMoreGeneral(Type other_type)
         // in all of these ifs' belowe, we are assuming that these types are RELATED
         if(this->type_enum == UNDETERMINED) return *this;
         else if(other_type.type_enum == UNDETERMINED) return other_type;
+        //else if(this->type_enum == POLYMORPHIC && other_type.type_enum == POLYMORPHIC) return this->polymorphic_helper_id < other_type.polymorphic_helper_id ? *this : other_type;
         else if(this->type_enum == POLYMORPHIC) return *this;
         else if(other_type.type_enum == POLYMORPHIC) return other_type;
         else if(this->type_enum == COMPLEX && other_type.type_enum == COMPLEX){
@@ -35,6 +36,7 @@ Type Type::getMoreSpecific(Type other_type)
         // in all of these ifs' belowe, we are assuming that these types are RELATED
         if(this->type_enum == UNDETERMINED) return other_type;
         else if(other_type.type_enum == UNDETERMINED) return *this;
+        //else if(this->type_enum == POLYMORPHIC && other_type.type_enum == POLYMORPHIC) return this->polymorphic_helper_id < other_type.polymorphic_helper_id ? *this : other_type;
         else if(this->type_enum == POLYMORPHIC) return other_type;
         else if(other_type.type_enum == POLYMORPHIC) return *this;
         else if(this->type_enum == COMPLEX && other_type.type_enum == COMPLEX){
@@ -84,4 +86,46 @@ Type Type::withTypeSwapped(Type fromType, Type toType)
         }
         return copy;
     }
+}
+
+// 'this' is a pattern
+// to is an 'argument'
+void Type::getTypeMapping(std::map<Type, Type>& mapping, Type to)
+{
+    if(relatedWith(to)){
+        if(type_enum == POLYMORPHIC){
+            mapping[*this] = mapping[*this].getMoreSpecific(to);
+        }
+        else{
+            for(unsigned int i = 0; i<aggregated_types.size(); ++i){
+                aggregated_types[i].getTypeMapping(mapping, to.aggregated_types[i]);
+            }
+        }
+    }
+    else throw std::runtime_error("trying to obtain mapping between unrelated types");
+}
+
+Type Type::withAppliedMapping(const std::map<Type, Type> &mapping)
+{
+    if(type_enum == POLYMORPHIC){
+        if(mapping.find(*this) != mapping.end()) return mapping.find(*this)->second;
+        else return *this;
+    }
+    else{
+        Type result = *this;
+        for(unsigned int i = 0; i<aggregated_types.size(); ++i){
+            result.aggregated_types[i] = aggregated_types[i].withAppliedMapping(mapping);
+        }
+        return result;
+    }
+}
+
+Type Type::withArgumentApplied(Type argumentType)
+{
+    if(type_enum == FUNCTION_TYPE){
+        std::map<Type, Type> type_mapping;
+        aggregated_types[0].getTypeMapping(type_mapping, argumentType);
+        return aggregated_types[1].withAppliedMapping(type_mapping);
+    }
+    else throw std::runtime_error("deducing return type of non-function");
 }

@@ -33,15 +33,22 @@ void Environment::setIdentifierType(Identifier identifier, Type newType)
     std::deque< std::pair<Identifier, Type> >::reverse_iterator iter;
     for(iter = identifier_types.rbegin(); iter != identifier_types.rend() && iter->first.name != identifier.name; ++iter);
     if(iter != identifier_types.rend()){
-        iter->second = newType.getMoreSpecific(iter->second);
+        std::pair<Identifier, Type> found = *iter;
+        iter->second = iter->second.getMoreSpecific(newType);
     }
-    else throw std::runtime_error("identifier not found");
+    else{
+        // it is not considered an arror anymore
+        //throw std::runtime_error("identifier not found");
+    }
 }
 
 Type Environment::getIdentifierType(Identifier identifier)
 {
     for(auto iter = identifier_types.rbegin(); iter != identifier_types.rend(); ++iter){
-        if(iter->first.name == identifier.name) return iter->second;
+        if(iter->first.name == identifier.name){
+            Type toReturn = iter->second;
+            return toReturn;
+        }
     }
     for(auto iter = env.rbegin(); iter != env.rend(); ++iter){
         if(iter->first.name == identifier.name) return iter->second->exp_type;
@@ -49,9 +56,11 @@ Type Environment::getIdentifierType(Identifier identifier)
     throw std::runtime_error("identifier not found");
 }
 
-Type Environment::get_new_polymorphic_type()
+Type Environment::getNewPolymorphicType()
 {
-    return Type(POLYMORPHIC, "'" + std::to_string(polymorphic_types_in_statement++));
+    Type toReturn(POLYMORPHIC, "'" + std::to_string(polymorphic_types_in_statement));
+    toReturn.polymorphic_helper_id = polymorphic_types_in_statement++;
+    return toReturn;
 }
 
 void Environment::reset_polymorphic_types()

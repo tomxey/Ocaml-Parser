@@ -17,6 +17,8 @@ TODO:
         make args of type 'a 'b instead of UNDETERMINED
         when getting 'moreSpecificType' pay attention to polymorphic types of the same id
         eg. ('a * 'a) ISN'T related with ( int * float )
+
+    - local type mapping, if function: ('a -> 'b) -> 'b is supplied with ('c -> 'd) argument then it doesn't mean that everywhere 'c = 'a and 'd = 'b, or does it?
  */
 
 int main(int argc, char **argv)
@@ -37,6 +39,10 @@ int main(int argc, char **argv)
   DEFINE_CURRIED_FUNCTION("/",a, b, return new Integer(((Integer*)a)->value / ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
   DEFINE_CURRIED_FUNCTION("=",a, b, return new Bool(((Integer*)a)->value == ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "bool"));
 
+  DEFINE_CURRIED_FUNCTION("tuple",a, b, return new ComplexValue(Type(COMPLEX, "tuple", "",std::vector<Type>{a->exp_type, b->exp_type}), std::vector<Value*>{a, b});, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b"), Type(COMPLEX, "tuple", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}));
+  ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "tuple", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));
+  ParseEssentials::toplevel_environment.addValue(Identifier("snd"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[1];}, Type(COMPLEX, "tuple", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'b") ));
+
   std::set<int> properStatements;
 
   std::cout << "Number of statements: " << ParseEssentials::toplevel_statements.size() << std::endl;
@@ -51,12 +57,22 @@ int main(int argc, char **argv)
   i = 0;
   for(Statement* statement : ParseEssentials::toplevel_statements){
       std::cout << "-->Statement " << i << std::endl;
+      int deductionAttempts = 0;
       try{
-        std::cout << statement->deduceType(ParseEssentials::toplevel_environment, Type()) << std::endl;
+          deductionAttempts++;
+          Type type, newType;
+          type = newType = statement->deduceType(ParseEssentials::toplevel_environment, Type());
+          do{
+              type = newType;
+              deductionAttempts++;
+              newType = statement->deduceType(ParseEssentials::toplevel_environment, type);
+          } while(type != newType);
+        std::cout << newType << std::endl;
         properStatements.insert(i);
       } catch(std::runtime_error ex){
           std::cout << "Type deduction for statement " << i << " failed:\n" << ex.what() << std::endl;
       }
+      std::cout << "Deduced " << deductionAttempts << " times..." << std::endl;
       ++i;
   }
 

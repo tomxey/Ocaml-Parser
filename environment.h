@@ -23,7 +23,7 @@ public:
     void setIdentifierType(Identifier identifier, Type newType);
     Type getIdentifierType(Identifier identifier);
 
-    Type get_new_polymorphic_type();
+    Type getNewPolymorphicType();
     void reset_polymorphic_types();
     int polymorphic_types_in_statement;
 

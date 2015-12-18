@@ -6,6 +6,8 @@
 #include <ostream>
 #include <iostream>
 #include <functional>
+#include <cassert>
+#include <sstream>
 #include "environment.h"
 #include "vartype.h"
 #include "value.h"
@@ -59,7 +61,11 @@ public:
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
         exp_type = env.getIdentifierType(*this);
         Type newType = exp_type.getMoreSpecific(mostGeneralExpected);
-        if(exp_type != newType) env.setIdentifierType(*this, newType);
+        if(exp_type != newType){
+            env.setIdentifierType(*this, newType);
+            //Type getted = env.getIdentifierType(*this);
+            //assert(newType == getted);
+        }
         return exp_type = newType;
     }
 
@@ -111,10 +117,12 @@ public:
         condition->deduceType(env, Type(PRIMITIVE, "bool"));
         Type trueType = mostGeneralExpected;
         Type falseType = mostGeneralExpected;
+        Type newTrueType = trueType, newFalseType = falseType;
         do{
-            trueType = true_path->deduceType(env, falseType);
-            falseType = false_path->deduceType(env, trueType);
-        } while(trueType != falseType);
+            trueType = newTrueType; falseType = newFalseType;
+            newTrueType = true_path->deduceType(env, falseType);
+            newFalseType = false_path->deduceType(env, trueType);
+        } while(newTrueType != newFalseType && (newTrueType != trueType || newFalseType != falseType));
         return this->exp_type = trueType;
     }
 
@@ -131,12 +139,21 @@ public:
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Function Call: \n") + function_expression->print(indents+1) + argument_expression->print(indents+1);}
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
-        function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{Type(), Type()}));
+        // only request new polymorphic type if needed
+        ///if(function_expression->exp_type.type_enum == FUNCTION_TYPE) function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{Type(), mostGeneralExpected}));
+        ///else function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType().getMoreSpecific(mostGeneralExpected)}));
+
+        function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{Type(), mostGeneralExpected}));
+
         if(function_expression->exp_type.type_enum != FUNCTION_TYPE){
             throw std::runtime_error("expression is not a function");
         }
-        this->exp_type = function_expression->exp_type.withTypeSwapped(function_expression->exp_type.aggregated_types[0],
-                function_expression->exp_type.aggregated_types[0].getMoreSpecific(argument_expression->deduceType(env, function_expression->exp_type.aggregated_types[0])) ).aggregated_types[1]; // take return type with argument type applied
+
+        argument_expression->deduceType(env, function_expression->exp_type.aggregated_types[0]);
+
+        this->exp_type = function_expression->exp_type.withArgumentApplied(argument_expression->exp_type);
+        function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{argument_expression->deduceType(env, Type()), this->exp_type}));
+
         return exp_type;
     }
 
@@ -172,8 +189,12 @@ public:
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
         env.addActivationFrame();
-            env.addIdentifierToBeTypeDeduced(*arg_name, false);
-            function_expression->deduceType(env, mostGeneralExpected.getMoreSpecific(Type(FUNCTION_TYPE,"","",std::vector<Type>{Type(),Type()})).aggregated_types[1] );
+            Type argumentType = arg_name->exp_type;
+            Type resultType = function_expression->exp_type;
+            if(argumentType.type_enum == UNDETERMINED) argumentType = env.getNewPolymorphicType();
+            if(resultType.type_enum == UNDETERMINED) resultType = env.getNewPolymorphicType();
+            env.addIdentifierToBeTypeDeduced(*arg_name, false, argumentType);
+            function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{argumentType, resultType}).getMoreSpecific(mostGeneralExpected).aggregated_types[1] );
             arg_name->exp_type = env.getIdentifierType(*arg_name);
             this->exp_type = Type(FUNCTION_TYPE, "","",std::vector<Type>{arg_name->exp_type, function_expression->exp_type} );
         env.removeActivationFrame();
@@ -202,7 +223,18 @@ public:
 };
 
 class ComplexValue : public Value{
+public:
+    ComplexValue(Type type, std::vector<Value*> aggregatedValues): type(type), aggregatedValues(aggregatedValues){}
 
+    Type type;
+    std::vector<Value*> aggregatedValues;
+
+    virtual std::string print(int indents) override {
+        std::stringstream ss;
+        ss << std::string(indents, ' ') << type << ":" << std::endl;
+        for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->print(indents + 1);
+        return ss.str();
+    }
 };
 
 class Primitive : public Value{
