@@ -66,14 +66,15 @@ extern "C" FILE *yyin;
 %%
 
 input:  /* empty */
-        statements      { ParseEssentials::toplevel_statements.insert(ParseEssentials::toplevel_statements.end(), $1->begin(), $1->end()); }
+       | statements      { ParseEssentials::toplevel_statements.insert(ParseEssentials::toplevel_statements.end(), $1->begin(), $1->end()); }
 		;
 
 statements:     statement               { $$ = new vector<Statement*>{$1}; }
           |     statements statement    { $1->push_back($2);  $$ = $1; }
+          ;
 
-statement:   LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new Let(new Identifier(*$3), $5); }
-         |   exp SEMIC2 { $$ = $1; }
+statement:   LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new Let(new Identifier(*$3), $5); ParseEssentials::parseStatement($$); }
+         |   exp SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
          ;
 
 exp:        INTEGER_LITERAL	{ $$ = new Integer($1); }
@@ -93,7 +94,7 @@ exp:        INTEGER_LITERAL	{ $$ = new Integer($1); }
 
 RECS:   /* empty */ { $$ = false; }
         | REC     { $$ = true; }
-
+        ;
 //SEMIC2_PLUS_COMMENTED:  SEMIC2
 //                     |  SEMIC2 COMMENTED_LINE statement
 //                    ;

@@ -39,7 +39,7 @@ string_const \"{ident}\"
 {ident}         { yylval.op_val = new std::string(yytext); return IDENTIFIER; }
 
 [ \t]*		{}
-[\n]		{ yylineno++;	}
+[\n]		{ yylineno++;}
 
 .		{ std::cerr << "SCANNER "; yyerror(""); exit(1);	}
 

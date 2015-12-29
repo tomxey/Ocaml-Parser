@@ -36,3 +36,7 @@ let chooser = function c -> function t -> function f -> function a -> (if (c) th
 (applier (function n -> 1)) 1.0;;
 
 let applier = function f -> function a -> function b -> ((f a) b);;
+
+
+let swap = function p -> (tuple (snd p)) (fst p);;
+swap ((tuple 1) "string");;

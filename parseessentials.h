@@ -16,6 +16,9 @@ return partially_applied; \
 
 namespace ParseEssentials
 {
+    extern void parseNewStatements();
+    extern void parseStatement(Statement* statement);
+
     extern std::vector<Statement*> toplevel_statements;
     extern Environment toplevel_environment;
 }
