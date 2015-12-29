@@ -35,12 +35,17 @@ int main(int argc, char **argv)
     ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "tuple", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));
     ParseEssentials::toplevel_environment.addValue(Identifier("snd"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[1];}, Type(COMPLEX, "tuple", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'b") ));
 
+    ParseEssentials::toplevel_environment.addValue(Identifier("exit"), new BuiltIn_Function([](Value* arg)->Value* { exit( ((Integer*)arg)->value );}, Type(PRIMITIVE, "int"), Type(POLYMORPHIC, "'a") ));
+
   if ((argc > 1) && (freopen(argv[1], "r", stdin) == NULL))
   {
     cerr << argv[0] << ": File " << argv[1] << " cannot be opened.\n";
     exit( 1 );
   }
-  yyparse();
+
+  while(!feof(stdin)){
+    yyparse();
+  }
 
   return 0;
 }

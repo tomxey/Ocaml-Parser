@@ -58,8 +58,7 @@ Type Environment::getIdentifierType(Identifier identifier)
 
 Type Environment::getNewPolymorphicType()
 {
-    Type toReturn(POLYMORPHIC, "'" + std::to_string(polymorphic_types_in_statement));
-    toReturn.polymorphic_helper_id = polymorphic_types_in_statement++;
+    Type toReturn(POLYMORPHIC, "'" + std::to_string(polymorphic_types_in_statement++));
     return toReturn;
 }
 

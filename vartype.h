@@ -7,7 +7,7 @@
 #include <ostream>
 //#include "ast.h"
 
-#define MAX_POLYMORPHIC_ID 1000000
+//#define MAX_POLYMORPHIC_ID 1000000
 
 enum TypeEnum{
     UNDETERMINED,
@@ -19,10 +19,10 @@ enum TypeEnum{
 
 class Type{
 public:
-    int polymorphic_helper_id;
+    //int polymorphic_helper_id;
 
     Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> aggregated_types = std::vector<Type>())
-        : polymorphic_helper_id(MAX_POLYMORPHIC_ID), type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), aggregated_types(aggregated_types){}
+        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), aggregated_types(aggregated_types){}
 
     Type withExpected(Type expected_type);
     Type getMoreGeneral(Type other_type);

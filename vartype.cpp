@@ -8,7 +8,6 @@ Type Type::getMoreGeneral(Type other_type)
         // in all of these ifs' belowe, we are assuming that these types are RELATED
         if(this->type_enum == UNDETERMINED) return *this;
         else if(other_type.type_enum == UNDETERMINED) return other_type;
-        //else if(this->type_enum == POLYMORPHIC && other_type.type_enum == POLYMORPHIC) return this->polymorphic_helper_id < other_type.polymorphic_helper_id ? *this : other_type;
         else if(this->type_enum == POLYMORPHIC) return *this;
         else if(other_type.type_enum == POLYMORPHIC) return other_type;
         else if(this->type_enum == COMPLEX && other_type.type_enum == COMPLEX){
@@ -36,7 +35,6 @@ Type Type::getMoreSpecific(Type other_type)
         // in all of these ifs' belowe, we are assuming that these types are RELATED
         if(this->type_enum == UNDETERMINED) return other_type;
         else if(other_type.type_enum == UNDETERMINED) return *this;
-        //else if(this->type_enum == POLYMORPHIC && other_type.type_enum == POLYMORPHIC) return this->polymorphic_helper_id < other_type.polymorphic_helper_id ? *this : other_type;
         else if(this->type_enum == POLYMORPHIC) return other_type;
         else if(other_type.type_enum == POLYMORPHIC) return *this;
         else if(this->type_enum == COMPLEX && other_type.type_enum == COMPLEX){
