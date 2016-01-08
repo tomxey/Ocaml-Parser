@@ -27,13 +27,14 @@ void ParseEssentials::parseStatement(Statement *statement)
     try{
         deductionAttempts++;
         Type type, newType;
-        type = newType = statement->deduceType(ParseEssentials::toplevel_environment, Type());
+        type = newType = statement->deduceType(ParseEssentials::toplevel_environment, ParseEssentials::toplevel_environment.getNewPolymorphicType());
         do{
             type = newType;
             deductionAttempts++;
             newType = statement->deduceType(ParseEssentials::toplevel_environment, type);
         } while(type != newType);
-      std::cout << newType << std::endl;
+      std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
+      std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.followRelations(newType) << std::endl;
     } catch(std::runtime_error ex){
         std::cout << "Type deduction for statement failed:\n" << ex.what() << std::endl;
         statement_good = false;

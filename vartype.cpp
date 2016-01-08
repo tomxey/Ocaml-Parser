@@ -2,7 +2,7 @@
 #include <exception>
 
 
-Type Type::getMoreGeneral(Type other_type)
+/*Type Type::getMoreGeneral(Type other_type)
 {
     if(this->relatedWith(other_type)){
         // in all of these ifs' belowe, we are assuming that these types are RELATED
@@ -27,9 +27,9 @@ Type Type::getMoreGeneral(Type other_type)
     else{
         throw std::runtime_error("Trying to get more general type from 2 unrelated types.");
     }
-}
+}*/
 
-Type Type::getMoreSpecific(Type other_type)
+/*Type Type::getMoreSpecific(Type other_type)
 {
     if(this->relatedWith(other_type)){
         // in all of these ifs' belowe, we are assuming that these types are RELATED
@@ -54,9 +54,9 @@ Type Type::getMoreSpecific(Type other_type)
     else{
         throw std::runtime_error("Trying to get more specific type from 2 unrelated types.");
     }
-}
+}*/
 
-bool Type::relatedWith(Type other_type)
+/*bool Type::relatedWith(Type other_type)
 {
     if(this->type_enum == UNDETERMINED || other_type.type_enum == UNDETERMINED) return true;
     else if(this->type_enum == POLYMORPHIC || other_type.type_enum == POLYMORPHIC) return true;
@@ -72,9 +72,9 @@ bool Type::relatedWith(Type other_type)
     }
     else if(this->type_enum == PRIMITIVE && other_type.type_enum == PRIMITIVE && this->type_name == other_type.type_name) return true;
     else return false;
-}
+}*/
 
-Type Type::withTypeSwapped(Type fromType, Type toType)
+/*Type Type::withTypeSwapped(Type fromType, Type toType)
 {
     if(*this == fromType) return toType;
     else{
@@ -90,17 +90,16 @@ Type Type::withTypeSwapped(Type fromType, Type toType)
 // to is an 'argument'
 void Type::getTypeMapping(std::map<Type, Type>& mapping, Type to)
 {
-    if(relatedWith(to)){
-        if(type_enum == POLYMORPHIC){
-            mapping[*this] = mapping[*this].getMoreSpecific(to);
-        }
-        else{
-            for(unsigned int i = 0; i<aggregated_types.size(); ++i){
-                aggregated_types[i].getTypeMapping(mapping, to.aggregated_types[i]);
-            }
+    //fucked up here
+    if(type_enum == POLYMORPHIC){
+        if(mapping[*this].type_enum == POLYMORPHIC || mapping[*this].type_enum == UNDETERMINED) mapping[*this] = to;
+        else mapping[*this].getTypeMapping(mapping, to);
+    }
+    else{
+        for(unsigned int i = 0; i<aggregated_types.size(); ++i){
+            aggregated_types[i].getTypeMapping(mapping, to.aggregated_types[i]);
         }
     }
-    else throw std::runtime_error("trying to obtain mapping between unrelated types");
 }
 
 Type Type::withAppliedMapping(const std::map<Type, Type> &mapping)
@@ -116,9 +115,9 @@ Type Type::withAppliedMapping(const std::map<Type, Type> &mapping)
         }
         return result;
     }
-}
+}*/
 
-Type Type::withArgumentApplied(Type argumentType)
+/*Type Type::withArgumentApplied(Type argumentType)
 {
     if(type_enum == FUNCTION_TYPE){
         std::map<Type, Type> type_mapping;
@@ -126,4 +125,4 @@ Type Type::withArgumentApplied(Type argumentType)
         return aggregated_types[1].withAppliedMapping(type_mapping);
     }
     else throw std::runtime_error("deducing return type of non-function");
-}
+}*/

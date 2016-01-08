@@ -39,6 +39,24 @@ public:
     // pointers used so values stored could be polymorphic
     std::deque< std::pair<Identifier, Value*> > env;
     std::deque< std::pair<Identifier, TypeDef> > type_defs;
+
+
+    Type followRelations(Type type, int depth = 0);
+    void addFunctionCallRelations(Type function_type, Type argument_applied, Type result_expected);
+    void addRelation(Type from, Type to);
+    void checkForCircularReferences();
+    void clearRelations();
+
+    Type renumeratedToSmallest(Type type);
+    Type renumeratedToUnique(Type type);
+
+    std::string relationsToString();
+
+private:
+    Type doRenumerations(Type type, std::map<Type, Type>& renumerations);
+
+private:
+    std::map<Type, Type> type_relations;
 };
 
 #include "ast.h"

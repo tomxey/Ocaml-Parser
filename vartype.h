@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <sstream>
 #include <ostream>
 //#include "ast.h"
 
@@ -24,8 +25,8 @@ public:
     Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> aggregated_types = std::vector<Type>())
         : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), aggregated_types(aggregated_types){}
 
-    Type withExpected(Type expected_type);
-    Type getMoreGeneral(Type other_type);
+    //Type withExpected(Type expected_type);
+    //Type getMoreGeneral(Type other_type);
     Type getMoreSpecific(Type other_type);
     bool relatedWith(Type other_type);
 
@@ -51,6 +52,12 @@ public:
         else os << "PRIMITIVE: " << val.type_name;
 
         return os;
+    }
+
+    std::string to_string(){
+        std::stringstream ss;
+        ss << (*this);
+        return ss.str();
     }
 
     bool operator==(const Type& other) const{

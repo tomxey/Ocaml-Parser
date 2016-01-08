@@ -36,7 +36,11 @@ class Expression : public Statement{
 public:
     Type exp_type; // UNDETERMINED by default
 
-    virtual Type deduceType(Environment &env, Type mostGeneralExpected) override { return exp_type.getMoreSpecific(mostGeneralExpected); }
+    virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
+        if(exp_type.type_enum == UNDETERMINED){ exp_type = env.getNewPolymorphicType(); }
+        env.addRelation(exp_type, mostGeneralExpected);
+        return exp_type = env.followRelations(exp_type);
+    }
     virtual Value* call(Environment& env, Expression* argument){ throw std::runtime_error("expression not callable"); }
 };
 
@@ -47,6 +51,10 @@ public:
 
     virtual Value* execute(Environment& ) override {
         return this;
+    }
+
+    virtual void giveIdentifierForRecursion(Identifier* identifier){
+        // nothing
     }
 };
 
@@ -59,14 +67,10 @@ public:
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Identifier: ") + name + "\n";}
 
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
-        exp_type = env.getIdentifierType(*this);
-        Type newType = exp_type.getMoreSpecific(mostGeneralExpected);
-        if(exp_type != newType){
-            env.setIdentifierType(*this, newType);
-            //Type getted = env.getIdentifierType(*this);
-            //assert(newType == getted);
-        }
-        return exp_type = newType;
+        Expression::deduceType(env, mostGeneralExpected);
+        env.addRelation(exp_type, env.getIdentifierType(*this));
+        env.setIdentifierType(*this, mostGeneralExpected);
+        return env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
@@ -82,15 +86,21 @@ public:
     Expression* expression;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Let: \n") + identifier->print(indents+1) + expression->print(indents+1);}
-    virtual Type deduceType(Environment& env, Type) override {
-        env.addIdentifierToBeTypeDeduced(*identifier);
-        env.setIdentifierType(*identifier, expression->deduceType(env, Type()));
+    virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
+        if(identifier->exp_type.type_enum == UNDETERMINED) identifier->exp_type = env.getNewPolymorphicType();
+        if(expression->exp_type.type_enum == UNDETERMINED) expression->exp_type = env.getNewPolymorphicType();
+
+        env.addIdentifierToBeTypeDeduced(*identifier, false, identifier->exp_type); // if rec?
+        env.addRelation(identifier->exp_type, expression->exp_type); // if rec?
+        env.setIdentifierType(*identifier, expression->deduceType(env, mostGeneralExpected));
         //return Type();
         return env.getIdentifierType(*identifier);
     }
 
     virtual Value* execute(Environment& env) override {
-        env.addValue(*identifier, expression->execute(env));
+        Value* value = expression->execute(env);
+        env.addValue(*identifier, value);
+        value->giveIdentifierForRecursion(identifier);
         return nullptr;
     }
 };
@@ -115,15 +125,13 @@ public:
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
         condition->deduceType(env, Type(PRIMITIVE, "bool"));
-        Type trueType = mostGeneralExpected;
-        Type falseType = mostGeneralExpected;
-        Type newTrueType = trueType, newFalseType = falseType;
-        do{
-            trueType = newTrueType; falseType = newFalseType;
-            newTrueType = true_path->deduceType(env, falseType);
-            newFalseType = false_path->deduceType(env, trueType);
-        } while(newTrueType != newFalseType && (newTrueType != trueType || newFalseType != falseType));
-        return this->exp_type = trueType;
+        if(exp_type.type_enum == UNDETERMINED) exp_type = mostGeneralExpected;
+
+        env.addRelation(exp_type, mostGeneralExpected);
+        true_path->deduceType(env, exp_type);
+        false_path->deduceType(env, exp_type);
+
+        return env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override;
@@ -142,19 +150,14 @@ public:
         // only request new polymorphic type if needed
         ///if(function_expression->exp_type.type_enum == FUNCTION_TYPE) function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{Type(), mostGeneralExpected}));
         ///else function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType().getMoreSpecific(mostGeneralExpected)}));
+        Expression::deduceType(env, mostGeneralExpected);
 
-        function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{Type(), mostGeneralExpected}));
+        Type function_expression_type = function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{env.getNewPolymorphicType(), mostGeneralExpected}));
+        Type argument_expression_type = argument_expression->deduceType(env, function_expression->exp_type.aggregated_types[0]);
 
-        if(function_expression->exp_type.type_enum != FUNCTION_TYPE){
-            throw std::runtime_error("expression is not a function");
-        }
+        env.addFunctionCallRelations(function_expression_type, argument_expression_type, exp_type);
 
-        argument_expression->deduceType(env, function_expression->exp_type.aggregated_types[0]);
-
-        this->exp_type = function_expression->exp_type.withArgumentApplied(argument_expression->exp_type);
-        function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{argument_expression->deduceType(env, Type()), this->exp_type}));
-
-        return exp_type;
+        return exp_type = env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
@@ -189,22 +192,27 @@ public:
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
         env.addActivationFrame();
-            Type argumentType = arg_name->exp_type;
-            Type resultType = function_expression->exp_type;
-            if(argumentType.type_enum == UNDETERMINED) argumentType = env.getNewPolymorphicType();
-            if(resultType.type_enum == UNDETERMINED) resultType = env.getNewPolymorphicType();
-            env.addIdentifierToBeTypeDeduced(*arg_name, false, argumentType);
-            function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{argumentType, resultType}).getMoreSpecific(mostGeneralExpected).aggregated_types[1] );
-            arg_name->exp_type = env.getIdentifierType(*arg_name);
-            this->exp_type = Type(FUNCTION_TYPE, "","",std::vector<Type>{arg_name->exp_type, function_expression->exp_type} );
+            if(exp_type.type_enum == UNDETERMINED) exp_type = Type(FUNCTION_TYPE, "", "", std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType()});
+            if(env.followRelations(exp_type).type_enum == POLYMORPHIC){
+                env.addRelation(exp_type, Type(FUNCTION_TYPE, "", "", std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType()}));
+                exp_type = env.followRelations(exp_type);
+            }
+            env.addRelation(exp_type, mostGeneralExpected);
+            env.addIdentifierToBeTypeDeduced(*arg_name, false, exp_type.aggregated_types[0]);
+            function_expression->deduceType(env, exp_type.aggregated_types[1]);
         env.removeActivationFrame();
-        return exp_type;
+        return env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
         this->env_copy = env;
         return this;
     }
+
+    virtual void giveIdentifierForRecursion(Identifier* identifier) override {
+        this->env_copy.addValue(*identifier, this);
+    }
+
 };
 
 
