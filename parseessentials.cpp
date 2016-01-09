@@ -33,8 +33,8 @@ void ParseEssentials::parseStatement(Statement *statement)
            // deductionAttempts++;
            // newType = statement->deduceType(ParseEssentials::toplevel_environment, type);
         //} while(type != newType);
-      std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
-      std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.followRelations(newType) << std::endl;
+      //std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
+      std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.renumeratedToSmallest(newType) << std::endl;
     } catch(std::runtime_error ex){
         std::cout << "Type deduction for statement failed:\n" << ex.what() << std::endl;
         statement_good = false;
