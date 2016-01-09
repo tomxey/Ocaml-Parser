@@ -41,7 +41,9 @@ public:
         env.addRelation(exp_type, mostGeneralExpected);
         return exp_type = env.followRelations(exp_type);
     }
-    virtual Value* call(Environment& env, Expression* argument){ throw std::runtime_error("expression not callable"); }
+    virtual Value* call(Environment& env, Value* argument){ throw std::runtime_error("expression not callable"); }
+
+    virtual bool isValue() { return false; }
 };
 
 class Value : public Expression{
@@ -53,9 +55,7 @@ public:
         return this;
     }
 
-    virtual void giveIdentifierForRecursion(Identifier* identifier){
-        // nothing
-    }
+    virtual bool isValue() override { return true; }
 };
 
 class Identifier : public Value{
@@ -68,41 +68,67 @@ public:
 
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
         Expression::deduceType(env, mostGeneralExpected);
+        exp_type = env.followRelations(exp_type);
         env.addRelation(exp_type, env.getIdentifierType(*this));
         env.setIdentifierType(*this, mostGeneralExpected);
-        return env.followRelations(exp_type);
+        return exp_type;
     }
 
     virtual Value* execute(Environment& env) override {
         return env.getValue(*this);
     }
+
+    friend bool operator<(const Identifier& lhs, const Identifier& rhs){
+        return lhs.name < rhs.name;
+    }
 };
 
 class Let : public Statement{
 public:
-    Let(Identifier* identifier, Expression* expression): identifier(identifier), expression(expression){}
+    Let(Identifier* identifier, Expression* expression, bool recursive): identifier(identifier), expression(expression), recursive(recursive){}
 
     Identifier* identifier;
     Expression* expression;
+    bool recursive;
 
-    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Let: \n") + identifier->print(indents+1) + expression->print(indents+1);}
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + (recursive?std::string("Let rec: \n"):std::string("Let: \n")) + identifier->print(indents+1) + expression->print(indents+1);}
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
         if(identifier->exp_type.type_enum == UNDETERMINED) identifier->exp_type = env.getNewPolymorphicType();
         if(expression->exp_type.type_enum == UNDETERMINED) expression->exp_type = env.getNewPolymorphicType();
 
-        env.addIdentifierToBeTypeDeduced(*identifier, false, identifier->exp_type); // if rec?
-        env.addRelation(identifier->exp_type, expression->exp_type); // if rec?
-        env.setIdentifierType(*identifier, expression->deduceType(env, mostGeneralExpected));
-        //return Type();
+        env.addRelation(identifier->exp_type, expression->exp_type);
+
+        if(recursive){
+            if(expression->isValue()){
+                env.addIdentifierToBeTypeDeduced(*identifier, false, identifier->exp_type);
+                expression->deduceType(env, mostGeneralExpected);
+                env.setIdentifierType(*identifier, env.followRelations(identifier->exp_type));
+            }
+            else throw std::runtime_error("using rec keyword on non value");
+        }
+        else{
+            expression->deduceType(env, mostGeneralExpected); // deduce before adding it to identifier list, so it wont be visible recursively
+            env.addIdentifierToBeTypeDeduced(*identifier, false, env.followRelations(identifier->exp_type));
+        }
+
         return env.getIdentifierType(*identifier);
     }
 
     virtual Value* execute(Environment& env) override {
-        Value* value = expression->execute(env);
-        env.addValue(*identifier, value);
-        value->giveIdentifierForRecursion(identifier);
-        return nullptr;
-    }
+        if(recursive){
+            if(expression->isValue()){
+                env.addValue(*identifier, static_cast<Value*>(expression));
+                expression->execute(env);
+                return nullptr;
+            }
+            else throw std::runtime_error("using rec keyword on non value");
+        }
+        else{
+            Value* expression_result = expression->execute(env);
+            env.addValue(*identifier, expression_result);
+            return nullptr;
+        }
+    } // execute
 };
 
 class LetIn : public Expression{
@@ -162,7 +188,7 @@ public:
 
     virtual Value* execute(Environment& env) override {
         Value* function_val = function_expression->execute(env);
-        return function_val->call(env, argument_expression);;
+        return function_val->call(env, argument_expression->execute(env));;
     }
 };
 
@@ -178,17 +204,21 @@ public:
     Identifier* arg_name;
     Expression* function_expression;
     Environment env_copy;
+    //bool currently_being_called;
 
-    virtual Value* call(Environment& env, Expression* argument) override {
+    virtual Value* call(Environment&, Value* argument) override {
         // function internal expression works on env_copy!
-        env_copy.addActivationFrame();
-        env_copy.addValue(*arg_name, argument->execute(env));
-        Value* return_value = function_expression->execute(env_copy);
-        env_copy.removeActivationFrame();
+        //currently_being_called = true;
+        Environment working_copy = env_copy;
+        working_copy.addActivationFrame();
+        working_copy.addValue(*arg_name, argument);
+        Value* return_value = function_expression->execute(working_copy);
+        working_copy.removeActivationFrame();
+        //currently_being_called = false;
         return return_value;
     }
 
-    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Function \n");}
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Function: \n") + arg_name->print(indents+1) + function_expression->print(indents+1);}
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
         env.addActivationFrame();
@@ -205,12 +235,9 @@ public:
     }
 
     virtual Value* execute(Environment& env) override {
+        //if(currently_being_called) throw std::runtime_error("env copy corruption");
         this->env_copy = env;
         return this;
-    }
-
-    virtual void giveIdentifierForRecursion(Identifier* identifier) override {
-        this->env_copy.addValue(*identifier, this);
     }
 
 };
@@ -221,8 +248,8 @@ public:
     BuiltIn_Function(std::function<Value*(Value*)> fun, Type argument_type, Type return_type): fun(fun) { exp_type = Type(FUNCTION_TYPE,"","",std::vector<Type>{argument_type, return_type});}
     std::function<Value*(Value*)> fun;
 
-    virtual Value* call(Environment& env, Expression* argument) override {
-        return fun.operator()(argument->execute(env));
+    virtual Value* call(Environment& env, Value* argument) override {
+        return fun.operator()(argument);
     }
 
     virtual Value* execute(Environment& env) override {

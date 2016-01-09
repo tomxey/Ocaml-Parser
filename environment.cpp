@@ -7,18 +7,23 @@ void Environment::addActivationFrame()
     identifier_types.push_back( std::make_pair(Identifier(ACTIVATION_FRAME_IDENTIFIER), Type()) );
     //identifier_types_rec.push_back( std::make_pair(Identifier(ACTIVATION_FRAME_IDENTIFIER), Type()) );
 
-    env.push_back( std::make_pair(Identifier(ACTIVATION_FRAME_IDENTIFIER), nullptr) );
+    identifiers_stack.push_back( Identifier(ACTIVATION_FRAME_IDENTIFIER));
 }
 
 void Environment::removeActivationFrame()
 {
     while(!identifier_types.empty() && identifier_types.back().first.name != ACTIVATION_FRAME_IDENTIFIER) identifier_types.pop_back();
     //while(!identifier_types_rec.empty() && identifier_types_rec.back().first.name != ACTIVATION_FRAME_IDENTIFIER) identifier_types_rec.pop_back();
-    while(!env.empty() && env.back().first.name != ACTIVATION_FRAME_IDENTIFIER) env.pop_back();
+    while(!identifiers_stack.empty() && identifiers_stack.back().name != ACTIVATION_FRAME_IDENTIFIER){
+        Identifier to_remove = identifiers_stack.back();
+
+        identifiers_stack.pop_back();
+        variables[to_remove].pop_back();
+    }
 
     if(!identifier_types.empty()) identifier_types.pop_back();
     //if(!identifier_types_rec.empty()) identifier_types_rec.pop_back();
-    if(!env.empty()) env.pop_back();
+    if(!identifiers_stack.empty()) identifiers_stack.pop_back();
 }
 
 void Environment::addIdentifierToBeTypeDeduced(Identifier identifier, bool rec, Type startingType)
@@ -30,7 +35,7 @@ void Environment::addIdentifierToBeTypeDeduced(Identifier identifier, bool rec, 
 
 void Environment::setIdentifierType(Identifier identifier, Type newType)
 {
-    std::deque< std::pair<Identifier, Type> >::reverse_iterator iter;
+    std::list< std::pair<Identifier, Type> >::reverse_iterator iter;
     for(iter = identifier_types.rbegin(); iter != identifier_types.rend() && iter->first.name != identifier.name; ++iter);
     if(iter != identifier_types.rend()){
         std::pair<Identifier, Type> found = *iter;
@@ -50,8 +55,9 @@ Type Environment::getIdentifierType(Identifier identifier)
             return toReturn;
         }
     }
-    for(auto iter = env.rbegin(); iter != env.rend(); ++iter){
-        if(iter->first.name == identifier.name) return iter->second->exp_type;
+
+    if(variables.find(identifier) != variables.end()){
+        return renumeratedToUnique(variables[identifier].back()->exp_type);
     }
     throw std::runtime_error("identifier not found");
 }
@@ -69,15 +75,16 @@ void Environment::reset_polymorphic_types()
 
 void Environment::addValue(Identifier identifier, Value *value)
 {
-    env.push_back(std::make_pair(identifier, value));
+    identifiers_stack.push_back(identifier);
+    variables[identifier].push_back(value);
 }
 
 Value *Environment::getValue(Identifier identifier)
 {
-    for(auto iter = env.rbegin(); iter != env.rend(); ++iter){
-        if(iter->first.name == identifier.name) return iter->second;
+    if(variables.find(identifier) != variables.end()){
+        return variables[identifier].back();
     }
-    return nullptr;
+    throw std::runtime_error("value not found for identifier: " + identifier.name);
 }
 
 Type Environment::followRelations(Type type, int depth)
@@ -160,7 +167,7 @@ Type Environment::doRenumerations(Type type, std::map<Type, Type> &renumerations
 
 Type Environment::renumeratedToUnique(Type type)
 {
-    type = followRelations(type);
+    //type = followRelations(type);
     std::map<Type, Type> renumerations;
     return doRenumerations(type, renumerations);
 }

@@ -3,6 +3,7 @@
 
 #include <map>
 #include <deque>
+#include <list>
 #include <algorithm>
 #include <vector>
 #include "value.h"
@@ -33,12 +34,13 @@ public:
     //void addFunctionArgument(Value* value);
     //Value* acceptFunctionArgument();
 
-    std::deque< std::pair<Identifier, Type> > identifier_types;
+    std::list< std::pair<Identifier, Type> > identifier_types;
     //std::deque< std::pair<Identifier, Type> > identifier_types_rec;
 
     // pointers used so values stored could be polymorphic
-    std::deque< std::pair<Identifier, Value*> > env;
-    std::deque< std::pair<Identifier, TypeDef> > type_defs;
+    std::list< Identifier > identifiers_stack;
+    std::map< Identifier, std::list<Value*> > variables;
+    std::list< std::pair<Identifier, TypeDef> > type_defs;
 
 
     Type followRelations(Type type, int depth = 0);

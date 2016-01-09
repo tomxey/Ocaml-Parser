@@ -73,7 +73,7 @@ statements:     statement               { $$ = new vector<Statement*>{$1}; }
           |     statements statement    { $1->push_back($2);  $$ = $1; }
           ;
 
-statement:   LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new Let(new Identifier(*$3), $5); ParseEssentials::parseStatement($$); }
+statement:   LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new Let(new Identifier(*$3), $5, $2); ParseEssentials::parseStatement($$); }
          |   exp SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
          ;
 
