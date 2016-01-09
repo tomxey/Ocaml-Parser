@@ -19,39 +19,49 @@ void ParseEssentials::parseNewStatements()
 
 void ParseEssentials::parseStatement(Statement *statement)
 {
+    std::cout << getColorCode(GREEN_CODE, true, true) << "---------Parsing Statement-------------" << getColorCode(RESET_CODE) << std::endl;
     int statement_good = true;
     std::cout << statement->print(0) << std::endl;
 
-    std::cout << "---------Determine Types---------------" << std::endl;
-    int deductionAttempts = 0;
+    std::cout << getColorCode(WHITE_CODE, true, true) << "---------Determine Types---------------" << getColorCode(RESET_CODE) << std::endl;
     try{
-        deductionAttempts++;
-        Type type, newType;
-        type = newType = statement->deduceType(ParseEssentials::toplevel_environment, ParseEssentials::toplevel_environment.getNewPolymorphicType());
-        //do{
-           // type = newType;
-           // deductionAttempts++;
-           // newType = statement->deduceType(ParseEssentials::toplevel_environment, type);
-        //} while(type != newType);
+        Type type;
+        type = statement->deduceType(ParseEssentials::toplevel_environment, ParseEssentials::toplevel_environment.getNewPolymorphicType());
       //std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
-      std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.renumeratedToSmallest(newType) << std::endl;
+      std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.renumeratedToSmallest(type) << std::endl;
     } catch(std::runtime_error ex){
-        std::cout << "Type deduction for statement failed:\n" << ex.what() << std::endl;
+        std::cout << getColorCode(RED_CODE, true, true) << "Type deduction for statement failed:\n" << ex.what() << std::endl;
         statement_good = false;
     }
-    std::cout << "Deduced " << deductionAttempts << " times..." << std::endl;
 
-    std::cout << "---------    Execute    ---------------" << std::endl;
+    std::cout << getColorCode(WHITE_CODE, true, true) << "---------    Execute    ---------------" << getColorCode(RESET_CODE) << std::endl;
     if(statement_good){
-        Value* retVal = statement->execute(ParseEssentials::toplevel_environment);
-        if(retVal != nullptr){
-            std::cout << retVal->print(1) << std::endl;
+        try{
+            Value* retVal = statement->execute(ParseEssentials::toplevel_environment);
+            if(retVal != nullptr){
+                std::cout << retVal->print(1) << std::endl;
+            }
+            else{
+                std::cout << "Some statement, no value to print..." << std::endl;
+            }
         }
-        else{
-            std::cout << "Some statement, no value to print..." << std::endl;
+        catch(std::runtime_error ex){
+            std::cout << getColorCode(RED_CODE, true, true) << "Error during execution: " << ex.what() << std::endl;
         }
     }
     else{
-        std::cout << "Statement not proper. Skipping..." << std::endl;
+        std::cout << getColorCode(YELLOW_CODE, true, true) << "Statement not proper. Skipping..." << std::endl;
     }
+
+    std::cout << getColorCode(WHITE_CODE, true, true) << "--------Statement Parsing Done---------" << getColorCode(RESET_CODE) << std::endl;
+}
+
+
+std::string ParseEssentials::getColorCode(int color_id, bool bright, bool bold, bool background)
+{
+#ifdef COLOR_OUTPUT
+    return std::string("\x1b[") + std::to_string(color_id+(background?(bright?60:0)+10:color_id==0?0:(bright?60:0))) + (bold?";1":"") + "m";
+#else
+    return std::string();
+#endif
 }
