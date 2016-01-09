@@ -198,23 +198,21 @@ class MatchWith : public Expression{
 
 class Function : public Value{
 public:
-    Function(Identifier* arg_name, Expression* function_expression):arg_name(arg_name), function_expression(function_expression)
+    Function(Identifier* arg_name, Expression* function_expression):arg_name(arg_name), function_expression(function_expression), env_initialized(false)
     {} // constructor
 
     Identifier* arg_name;
     Expression* function_expression;
+    bool env_initialized;
     Environment env_copy;
     //bool currently_being_called;
 
     virtual Value* call(Environment&, Value* argument) override {
         // function internal expression works on env_copy!
-        //currently_being_called = true;
-        Environment working_copy = env_copy;
-        working_copy.addActivationFrame();
-        working_copy.addValue(*arg_name, argument);
-        Value* return_value = function_expression->execute(working_copy);
-        working_copy.removeActivationFrame();
-        //currently_being_called = false;
+        env_copy.addActivationFrame();
+        env_copy.addValue(*arg_name, argument);
+        Value* return_value = function_expression->execute(env_copy);
+        env_copy.removeActivationFrame();
         return return_value;
     }
 
@@ -235,9 +233,16 @@ public:
     }
 
     virtual Value* execute(Environment& env) override {
-        //if(currently_being_called) throw std::runtime_error("env copy corruption");
-        this->env_copy = env;
-        return this;
+        if(env_initialized){ // for the second and further times, we have to return a copy
+            Function* function_copy = new Function(*this);
+            function_copy->env_copy = env;
+            return function_copy;
+        }
+        else{ // for the first time, we can return ourselves
+            this->env_copy = env;
+            env_initialized = true;
+            return this;
+        }
     }
 
 };
