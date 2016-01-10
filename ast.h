@@ -30,6 +30,10 @@ public:
 
 class TypeDefAST : public Statement{
 public:
+    TypeDefAST()
+    {}
+
+    //std::vector<std::string>
 };
 
 class Expression : public Statement{
@@ -203,7 +207,7 @@ public:
         Expression::deduceType(env, mostGeneralExpected);
 
         Type function_expression_type = function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{env.getNewPolymorphicType(), mostGeneralExpected}));
-        Type argument_expression_type = argument_expression->deduceType(env, function_expression->exp_type.aggregated_types[0]);
+        Type argument_expression_type = argument_expression->deduceType(env, function_expression->exp_type.type_parameters[0]);
 
         env.addFunctionCallRelations(function_expression_type, argument_expression_type, exp_type);
 
@@ -250,8 +254,8 @@ public:
                 exp_type = env.followRelations(exp_type);
             }
             env.addRelation(exp_type, mostGeneralExpected);
-            env.addIdentifierToBeTypeDeduced(*arg_name, false, exp_type.aggregated_types[0]);
-            function_expression->deduceType(env, exp_type.aggregated_types[1]);
+            env.addIdentifierToBeTypeDeduced(*arg_name, false, exp_type.type_parameters[0]);
+            function_expression->deduceType(env, exp_type.type_parameters[1]);
         env.removeActivationFrame();
         return env.followRelations(exp_type);
     }

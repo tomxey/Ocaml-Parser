@@ -104,9 +104,9 @@ Type Environment::followRelations(Type type, int depth)
         type = type_relations[type];
     }
 
-    if(type.aggregated_types.size() > 0){
-        for(unsigned int i=0; i<type.aggregated_types.size(); ++i){
-            type.aggregated_types[i] = followRelations(type.aggregated_types[i], depth + 1);
+    if(type.type_parameters.size() > 0){
+        for(unsigned int i=0; i<type.type_parameters.size(); ++i){
+            type.type_parameters[i] = followRelations(type.type_parameters[i], depth + 1);
         }
     }
 
@@ -120,9 +120,9 @@ void Environment::addFunctionCallRelations(Type function_type, Type argument_app
     result_expected = followRelations(result_expected);
 
     if(function_type.type_enum == FUNCTION_TYPE){
-        addRelation(function_type.aggregated_types[0], argument_applied);
+        addRelation(function_type.type_parameters[0], argument_applied);
         function_type = followRelations(function_type); // function type might have changed, update it
-        addRelation(function_type.aggregated_types[1], result_expected);
+        addRelation(function_type.type_parameters[1], result_expected);
     }
     else throw std::runtime_error("adding function relations using a non-function");
 }
@@ -140,9 +140,9 @@ void Environment::addRelation(Type from, Type to)
     else if(from.type_enum == PRIMITIVE && to.type_enum == PRIMITIVE){
         if(from!=to) throw std::runtime_error("adding relation between:" + from.type_name + " and " + to.type_name);
     }
-    else if(from.type_enum == COMPLEX && to.type_enum == COMPLEX && from.aggregated_types.size() == to.aggregated_types.size() || from.type_enum == FUNCTION_TYPE && to.type_enum == FUNCTION_TYPE){
-        for(unsigned int i=0; i<from.aggregated_types.size(); ++i){
-            addRelation(from.aggregated_types[i], to.aggregated_types[i]);
+    else if(from.type_enum == COMPLEX && to.type_enum == COMPLEX && from.type_parameters.size() == to.type_parameters.size() || from.type_enum == FUNCTION_TYPE && to.type_enum == FUNCTION_TYPE){
+        for(unsigned int i=0; i<from.type_parameters.size(); ++i){
+            addRelation(from.type_parameters[i], to.type_parameters[i]);
         }
     }
     else throw std::runtime_error("adding relation between" + from.to_string() + " and " + to.to_string());
@@ -167,8 +167,8 @@ Type Environment::doRenumerations(Type type, std::map<Type, Type> &renumerations
         else return renumerations[type] = getNewPolymorphicType();
     }
     else{
-        for(unsigned int i = 0; i < type.aggregated_types.size(); ++i){
-            type.aggregated_types[i] = doRenumerations(type.aggregated_types[i], renumerations);
+        for(unsigned int i = 0; i < type.type_parameters.size(); ++i){
+            type.type_parameters[i] = doRenumerations(type.type_parameters[i], renumerations);
         }
         return type;
     }

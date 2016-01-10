@@ -27,6 +27,8 @@ extern "C" FILE *yyin;
 %token	<string_val>	IDENTIFIER
 %token	<string_val>	STRING_LITERAL
 %token  <float_val>     FLOAT_LITERAL
+%token	<string_val>	VALUE_CONSTRUCTOR
+%token	<string_val>	POLYMORPHIC_TYPE
 
 %type	<statement>	statement
 %type	<statements>	statements
@@ -37,6 +39,8 @@ extern "C" FILE *yyin;
 // %right associative ...
 // %nonassoc    a + b + c = forbidden
 // the further the op is declared here, the higher precedence it has
+
+%nonassoc   TYPE OF
 
 %right	FUNCTION
 %right	INTO

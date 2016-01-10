@@ -23,7 +23,7 @@ public:
     //int polymorphic_helper_id;
 
     Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> aggregated_types = std::vector<Type>())
-        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), aggregated_types(aggregated_types){}
+        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), type_parameters(aggregated_types){}
 
     //Type withExpected(Type expected_type);
     //Type getMoreGeneral(Type other_type);
@@ -39,16 +39,16 @@ public:
     TypeEnum type_enum;
     std::string type_name;
     std::string constructor_name;
-    std::vector<Type> aggregated_types;
+    std::vector<Type> type_parameters;
 
     friend std::ostream& operator<<(std::ostream& os, const Type& val){
         if(val.type_enum == UNDETERMINED) os << "UNDETERMINED";
         else if(val.type_enum == POLYMORPHIC) os << "POLYMORPHIC: " << val.type_name;
         else if(val.type_enum == COMPLEX){
             os << "COMPLEX: " << val.type_name << ' ' << val.constructor_name << ' ';
-            for(unsigned int i=0; i<val.aggregated_types.size(); ++i) os << val.aggregated_types[i] << ' ';
+            for(unsigned int i=0; i<val.type_parameters.size(); ++i) os << val.type_parameters[i] << ' ';
         }
-        else if(val.type_enum == FUNCTION_TYPE) os << "FUNCTION_TYPE: " << val.aggregated_types[0] << " -> " << val.aggregated_types[1];
+        else if(val.type_enum == FUNCTION_TYPE) os << "FUNCTION_TYPE: " << val.type_parameters[0] << " -> " << val.type_parameters[1];
         else os << "PRIMITIVE: " << val.type_name;
 
         return os;
@@ -61,7 +61,7 @@ public:
     }
 
     bool operator==(const Type& other) const{
-        if(type_enum == other.type_enum && type_name == other.type_name && constructor_name == other.constructor_name && aggregated_types == other.aggregated_types) return true;
+        if(type_enum == other.type_enum && type_name == other.type_name && constructor_name == other.constructor_name && type_parameters == other.type_parameters) return true;
         else return false;
     }
 
@@ -73,7 +73,7 @@ public:
         if(type_enum == other.type_enum ){
             if(type_name == other.type_name ){
                 if(constructor_name == other.constructor_name ){
-                    return aggregated_types < other.aggregated_types;
+                    return type_parameters < other.type_parameters;
                 }
                 else return constructor_name < other.constructor_name;
             }
@@ -82,33 +82,6 @@ public:
         else return type_enum < other.type_enum;
     }
 };
-
-/*class Type
-{
-public:
-
-};
-
-class WeakPolymorphicType : public Type{
-
-};
-
-class PolymorphicType : public Type{
-
-};
-
-class ComplexType : public Type{
-
-};
-
-class FunctionType : public Type{
-
-};
-
-class PrimitiveType : public Type{
-
-};
-*/
 
 /** TYPE DEF BEGIN **/
 
