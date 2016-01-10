@@ -31,18 +31,16 @@ public:
     void addValue(Identifier identifier, Value* value);
     Value* getValue(Identifier identifier);
 
-    //void addFunctionArgument(Value* value);
-    //Value* acceptFunctionArgument();
-
     std::list< std::pair<Identifier, Type> > identifier_types;
-    //std::deque< std::pair<Identifier, Type> > identifier_types_rec;
 
     // pointers used so values stored could be polymorphic
     std::list< Identifier > identifiers_stack;
     std::map< Identifier, std::list<Value*> > variables;
     std::list< std::pair<Identifier, TypeDef> > type_defs;
 
+    void cleanupAfterStatement();
 
+/** type relations part **/
     Type followRelations(Type type, int depth = 0);
     void addFunctionCallRelations(Type function_type, Type argument_applied, Type result_expected);
     void addRelation(Type from, Type to);
@@ -57,7 +55,6 @@ public:
 private:
     Type doRenumerations(Type type, std::map<Type, Type>& renumerations);
 
-private:
     std::map<Type, Type> type_relations;
 };
 

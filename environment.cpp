@@ -57,7 +57,7 @@ Type Environment::getIdentifierType(Identifier identifier)
     }
 
     if(variables.find(identifier) != variables.end()){
-        return renumeratedToUnique(variables[identifier].back()->exp_type);
+        return renumeratedToUnique( followRelations(variables[identifier].back()->exp_type) );
     }
     throw std::runtime_error("identifier not found");
 }
@@ -85,6 +85,13 @@ Value *Environment::getValue(Identifier identifier)
         return variables[identifier].back();
     }
     throw std::runtime_error("value not found for identifier: " + identifier.name);
+}
+
+void Environment::cleanupAfterStatement()
+{
+    identifier_types.clear();
+    //reset_polymorphic_types();
+    //clearRelations();
 }
 
 Type Environment::followRelations(Type type, int depth)

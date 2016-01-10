@@ -21,17 +21,19 @@ void ParseEssentials::parseStatement(Statement *statement)
 {
     std::cout << getColorCode(GREEN_CODE, true, true) << "---------Parsing Statement-------------" << getColorCode(RESET_CODE) << std::endl;
     int statement_good = true;
+    Environment environment_backup = ParseEssentials::toplevel_environment;
     std::cout << statement->print(0) << std::endl;
 
     std::cout << getColorCode(WHITE_CODE, true, true) << "---------Determine Types---------------" << getColorCode(RESET_CODE) << std::endl;
     try{
         Type type;
         type = statement->deduceType(ParseEssentials::toplevel_environment, ParseEssentials::toplevel_environment.getNewPolymorphicType());
-      //std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
-      std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.renumeratedToSmallest(type) << std::endl;
+        //std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
+        std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.renumeratedToSmallest(type) << std::endl;
     } catch(std::runtime_error ex){
         std::cout << getColorCode(RED_CODE, true, true) << "Type deduction for statement failed:\n" << ex.what() << std::endl;
         statement_good = false;
+        ParseEssentials::toplevel_environment = environment_backup;
     }
 
     std::cout << getColorCode(WHITE_CODE, true, true) << "---------    Execute    ---------------" << getColorCode(RESET_CODE) << std::endl;
@@ -47,14 +49,16 @@ void ParseEssentials::parseStatement(Statement *statement)
         }
         catch(std::runtime_error ex){
             std::cout << getColorCode(RED_CODE, true, true) << "Error during execution: " << ex.what() << std::endl;
+            ParseEssentials::toplevel_environment = environment_backup;
         }
     }
     else{
         std::cout << getColorCode(YELLOW_CODE, true, true) << "Statement not proper. Skipping..." << std::endl;
     }
 
+    ParseEssentials::toplevel_environment.cleanupAfterStatement();
     std::cout << getColorCode(WHITE_CODE, true, true) << "--------Statement Parsing Done---------" << getColorCode(RESET_CODE) << std::endl;
-}
+} // parseStatement
 
 
 std::string ParseEssentials::getColorCode(int color_id, bool bright, bool bold, bool background)
