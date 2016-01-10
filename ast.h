@@ -132,11 +132,35 @@ public:
 };
 
 class LetIn : public Expression{
-    LetIn(Identifier* identifier, Expression* expression, Expression* in_expression): identifier(identifier), expression(expression), in_expression(in_expression){}
+public:
+    LetIn(Identifier* identifier, Expression* expression, bool recursive, Expression* in_expression)
+        :in_expression(in_expression){ let_part = new Let(identifier, expression, recursive); }
 
-    Identifier* identifier;
-    Expression* expression;
+    Let* let_part;
     Expression* in_expression;
+
+    virtual std::string print(int indents) override {return let_part->print(indents+1) + in_expression->print(indents+1);}
+    virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
+        Expression::deduceType(env, mostGeneralExpected);
+        if(in_expression->exp_type.type_enum == UNDETERMINED) in_expression->exp_type = env.getNewPolymorphicType();
+
+        env.addRelation(exp_type, in_expression->exp_type);
+
+        env.addActivationFrame();
+        let_part->deduceType(env, env.getNewPolymorphicType());
+        in_expression->deduceType(env, env.getNewPolymorphicType()); // with new variable 'letted', deduce type of in_expression
+        env.removeActivationFrame();
+
+        return env.followRelations(exp_type);
+    }
+
+    virtual Value* execute(Environment& env) override {
+        env.addActivationFrame();
+        let_part->execute(env);
+        Value* return_value = in_expression->execute(env);
+        env.removeActivationFrame();
+        return return_value;
+    } // execute
 };
 
 class Conditional : public Expression{

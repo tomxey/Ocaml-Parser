@@ -19,6 +19,8 @@ void Environment::removeActivationFrame()
 
         identifiers_stack.pop_back();
         variables[to_remove].pop_back();
+
+        if(variables[to_remove].size() == 0) variables.erase(variables.find(to_remove));
     }
 
     if(!identifier_types.empty()) identifier_types.pop_back();

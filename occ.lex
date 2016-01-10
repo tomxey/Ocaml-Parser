@@ -29,7 +29,8 @@ string_const \"{any_letter}*\"
 "/"				{ yylval.string_val = new std::string(yytext); return DIV; }
 "="				{ yylval.string_val = new std::string(yytext); return EQUALS; }
 "let"           { yylval.string_val = new std::string(yytext); return LET; }
-"rec"			{ yylval.string_val = new std::string(yytext); return REC; }
+"rec"		{ yylval.string_val = new std::string(yytext); return REC; }
+"in"            { yylval.string_val = new std::string(yytext); return IN; }
 "function"      { yylval.string_val = new std::string(yytext); return FUNCTION; }
 "->"            { yylval.string_val = new std::string(yytext); return INTO; }
 "if"            { yylval.string_val = new std::string(yytext); return IF; }

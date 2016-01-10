@@ -49,6 +49,7 @@ extern "C" FILE *yyin;
 
 %left	LET
 %left	REC
+%left   IN
 
 %right	IF
 %right	THEN ELSE
@@ -85,6 +86,7 @@ exp:        INTEGER_LITERAL	{ $$ = new Integer($1); }
         |   exp EQUALS exp      { $$ = new FunctionCall( new FunctionCall(new Identifier("="), $1) , $3); }
         |   IDENTIFIER          { $$ = new Identifier( *$1 ); }
         |   exp exp   %prec FUNAPPLY    { $$ = new FunctionCall($1, $2); }
+        |   LET RECS IDENTIFIER EQUALS exp IN exp   { $$ = new LetIn(new Identifier(*$3), $5, $2, $7); }
         |   IF exp THEN exp ELSE exp    { $$ = new Conditional($2, $4, $6); }
         |   FUNCTION IDENTIFIER INTO exp    { $$ = new Function(new Identifier(*$2), $4);}
         |   '(' exp ')'   { $$ = $2; }
