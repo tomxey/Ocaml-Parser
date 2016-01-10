@@ -9,4 +9,6 @@ one 1;;
 two 1;;
 three 1;;
 
-let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + ((muladd a) b) (n-1);;
+let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + (muladd a b (n-1));;
+let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + muladd a b (n-1);;
+let x = if 1 + 1 = 2 + 0 then 2 + 2 else 2 + 3;;
