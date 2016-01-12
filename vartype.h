@@ -22,8 +22,8 @@ class Type{
 public:
     //int polymorphic_helper_id;
 
-    Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> aggregated_types = std::vector<Type>())
-        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), type_parameters(aggregated_types){}
+    Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> type_parameters = std::vector<Type>())
+        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), type_parameters(type_parameters){}
 
     //Type withExpected(Type expected_type);
     //Type getMoreGeneral(Type other_type);
@@ -38,7 +38,7 @@ public:
 
     TypeEnum type_enum;
     std::string type_name;
-    std::string constructor_name;
+    std::string constructor_name; // only used at runtime, at deduction time it should be equal to ""
     std::vector<Type> type_parameters;
 
     friend std::ostream& operator<<(std::ostream& os, const Type& val){
@@ -85,7 +85,7 @@ public:
 
 /** TYPE DEF BEGIN **/
 
-class TypeDef{
+/*class TypeDef{
 public:
     TypeDef(std::string type_name, std::vector<std::string> polymorphic_parameters_names, std::vector<Type> constructors = std::vector<Type>())
         :type_name(type_name), polymorphic_parameters_names(polymorphic_parameters_names), constructors(constructors){}
@@ -99,6 +99,6 @@ public:
     // tn = arg1,arg2,.... type_name
     //.. recursively
     std::vector<Type> constructors; // ComplexTypes containing constructor names along with argument types
-};
+};*/
 
 #endif // VARTYPE_H

@@ -42,11 +42,11 @@ public:
         return std::string(indents, ' ') + "TypeDef: " + type_name + "\n";
     }
     virtual Type deduceType(Environment& env, Type mostGeneralExpected){
-        return Type();
+        return Type(); // return newly deduced type?
     }
 
     virtual Value* execute(Environment& env){
-        return nullptr;
+        return nullptr; // return nothing i guess
     }
 };
 

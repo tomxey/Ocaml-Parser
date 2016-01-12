@@ -1,4 +1,5 @@
 #include "environment.h"
+#include <set>
 
 #define ACTIVATION_FRAME_IDENTIFIER "--afi--"
 
@@ -87,6 +88,43 @@ Value *Environment::getValue(Identifier identifier)
         return variables[identifier].back();
     }
     throw std::runtime_error("value not found for identifier: " + identifier.name);
+}
+
+void Environment::addType(TypeDefAST *type_def)
+{
+    std::vector<Type> type_parameters;
+    std::set<std::string> parameters_set;
+    for(std::string param : type_def->polymorphic_parameters_names){
+        type_parameters.push_back(Type(POLYMORPHIC, param));
+        parameters_set.insert(param);
+        if(param[0] != '\'') throw std::runtime_error("bad polymorphic parameter name: " + param);
+    }
+    if(parameters_set.size() != type_parameters.size()) throw std::runtime_error("parameter name used twice in type definition");
+
+    Type type_added(COMPLEX, type_def->type_name, "", type_parameters);
+
+    if(type_constructors.find(Identifier(type_def->type_name)) == type_constructors.end()){
+        type_constructors[Identifier(type_def->type_name)] = type_added;
+    }
+    else{
+        throw std::runtime_error("type " + type_def->type_name + " already exists");
+    }
+
+    /// now it is time to add Value Constructors
+    /// constructors wit argument will be functions, no-argument constructors will be ordinary variables
+/**
+    ParseEssentials::toplevel_environment.addValue(Identifier("fst"), // Constructor name
+                                               new BuiltIn_Function([](Value* arg)->Value* //
+                                                {return ((ComplexValue*)arg)->aggregatedValues[0];}, // return new complex value of type with specified constructor name, and argument as aggregatedValue
+                                               Type(COMPLEX, "pair", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), // argument type
+                                               Type(POLYMORPHIC, "'a") )); // return complex type
+**/
+} // addType
+
+Type Environment::getType(Identifier identifier)
+{
+    if(type_constructors.find(identifier) != type_constructors.end()) return renumeratedToUnique(type_constructors[identifier]);
+    else throw std::runtime_error("type " + identifier.name + " doean't exist");
 }
 
 void Environment::cleanupAfterStatement()

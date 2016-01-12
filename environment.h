@@ -11,6 +11,7 @@
 
 class Identifier;
 class Value;
+class TypeDefAST;
 
 class Environment
 {
@@ -36,7 +37,10 @@ public:
     // pointers used so values stored could be polymorphic
     std::list< Identifier > identifiers_stack;
     std::map< Identifier, std::list<Value*> > variables;
-    std::list< std::pair<Identifier, TypeDef> > type_defs;
+    std::map< Identifier, Type > type_constructors;
+
+    void addType(TypeDefAST* type_def);
+    Type getType(Identifier identifier);
 
     void cleanupAfterStatement();
 
