@@ -87,10 +87,17 @@ public:
 
 class TypeDef{
 public:
-    TypeDef(std::string type_name, std::vector<Type> constructors = std::vector<Type>())
-        :type_name(type_name), constructors(constructors){}
+    TypeDef(std::string type_name, std::vector<std::string> polymorphic_parameters_names, std::vector<Type> constructors = std::vector<Type>())
+        :type_name(type_name), polymorphic_parameters_names(polymorphic_parameters_names), constructors(constructors){}
 
     std::string type_name;
+    std::vector<std::string> polymorphic_parameters_names;
+    std::vector<Type> type_parameters;
+
+    //TODO: think about it
+//type ('a,'b,....,'n) name = Cons1 of (t1,t2,..,tn) type_name | Cons2 | Cons3;;
+    // tn = arg1,arg2,.... type_name
+    //.. recursively
     std::vector<Type> constructors; // ComplexTypes containing constructor names along with argument types
 };
 

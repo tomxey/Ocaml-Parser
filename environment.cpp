@@ -137,15 +137,18 @@ void Environment::addRelation(Type from, Type to)
     if(from.type_enum == POLYMORPHIC && to.type_enum == POLYMORPHIC && from.type_name == to.type_name) return; // do not create loops
     if(from.type_enum == POLYMORPHIC) type_relations[from] = to;
     else if(to.type_enum == POLYMORPHIC) type_relations[to] = from;
-    else if(from.type_enum == PRIMITIVE && to.type_enum == PRIMITIVE){
-        if(from!=to) throw std::runtime_error("adding relation between:" + from.type_name + " and " + to.type_name);
-    }
-    else if(from.type_enum == COMPLEX && to.type_enum == COMPLEX && from.type_parameters.size() == to.type_parameters.size() || from.type_enum == FUNCTION_TYPE && to.type_enum == FUNCTION_TYPE){
+    else{
+        if(from.type_name != to.type_name) throw std::runtime_error("adding relation between:" + from.to_string() + " and " + to.to_string());
         for(unsigned int i=0; i<from.type_parameters.size(); ++i){
             addRelation(from.type_parameters[i], to.type_parameters[i]);
         }
     }
-    else throw std::runtime_error("adding relation between" + from.to_string() + " and " + to.to_string());
+
+    /// unnecessary part removed, it appears that complex types, function types and primitives can all be handled the same way
+    /*else if(from.type_enum == PRIMITIVE && to.type_enum == PRIMITIVE){
+        if(from!=to) throw std::runtime_error("adding relation between:" + from.type_name + " and " + to.type_name);
+    }
+    else if(from.type_enum == COMPLEX && to.type_enum == COMPLEX && from.type_parameters.size() == to.type_parameters.size() || from.type_enum == FUNCTION_TYPE && to.type_enum == FUNCTION_TYPE){*/
 }
 
 void Environment::clearRelations()

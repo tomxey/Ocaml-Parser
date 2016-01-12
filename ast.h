@@ -30,10 +30,24 @@ public:
 
 class TypeDefAST : public Statement{
 public:
-    TypeDefAST()
-    {}
+    TypeDefAST(std::string type_name, std::vector<std::string> polymorphic_parameters_names, std::vector< std::pair<std::string, Type> > constructors = std::vector< std::pair<std::string, Type> >())
+        :type_name(type_name), polymorphic_parameters_names(polymorphic_parameters_names), constructors(constructors){
+    }
 
-    //std::vector<std::string>
+    std::string type_name;
+    std::vector<std::string> polymorphic_parameters_names;
+    std::vector< std::pair<std::string, Type> > constructors;
+
+    virtual std::string print(int indents){
+        return std::string(indents, ' ') + "TypeDef: " + type_name + "\n";
+    }
+    virtual Type deduceType(Environment& env, Type mostGeneralExpected){
+        return Type();
+    }
+
+    virtual Value* execute(Environment& env){
+        return nullptr;
+    }
 };
 
 class Expression : public Statement{

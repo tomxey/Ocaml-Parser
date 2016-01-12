@@ -18,7 +18,12 @@ extern "C" FILE *yyin;
   Statement*    statement;
   Expression*   expresion;
   Identifier*   identifier;
+  Type*         type;
+  vector<Type>* types;
+  vector<string>*     strings;
   vector<Statement*>* statements;
+  pair<string, Type>*       value_constructor_definition;
+  vector< pair<string, Type> >*  value_constructors_definitions;
 }
 
 %start	input 
@@ -34,6 +39,15 @@ extern "C" FILE *yyin;
 %type	<statements>	statements
 %type	<expresion>	exp
 %type	<bool_val>	RECS
+%type   <strings>       polymorphic_types_list
+%type   <strings>       comma_separated_polymorphic_types
+
+%type   <types>         comma_separated_types
+%type   <types>         type_parameters
+%type   <type>          type
+
+%type   <value_constructors_definitions>    value_constructors_definitions
+%type   <value_constructor_definition>      value_constructor_definition
 
 // %left associative a + b + c = (a + b) + c
 // %right associative ...
@@ -78,7 +92,44 @@ statements:     statement               { $$ = new vector<Statement*>{$1}; }
 
 statement:      LET RECS IDENTIFIER EQUALS exp SEMIC2 { $$ = new Let(new Identifier(*$3), $5, $2); ParseEssentials::parseStatement($$); }
         |       exp SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
+        |       TYPE polymorphic_types_list IDENTIFIER EQUALS value_constructors_definitions SEMIC2 { $$ = new TypeDefAST(*$3, *$2, *$5); delete $2; delete $3; delete $5; ParseEssentials::parseStatement($$); }
         ;
+
+polymorphic_types_list:     /* empty */     { $$ = new vector<string>(); }
+                      |    POLYMORPHIC_TYPE     { $$ = new vector<string>{*$1}; delete $1; }
+                      |    '(' comma_separated_polymorphic_types ')'    { $$ = $2; }
+                      ;
+
+comma_separated_polymorphic_types:      POLYMORPHIC_TYPE    { $$ = new vector<string>{*$1}; delete $1; }
+                                 |      comma_separated_polymorphic_types ',' POLYMORPHIC_TYPE { $$ = $1; $$->push_back(*$3); delete $3; }
+                                 ;
+
+
+value_constructors_definitions:     value_constructor_definition    { $$ = new vector<pair<string,Type> >{*$1}; delete $1; }
+                              |     value_constructors_definitions '|' value_constructor_definition { $$ = $1; $$->push_back(*$3); delete $3; }
+                              ;
+
+value_constructor_definition:       VALUE_CONSTRUCTOR   { $$ = new pair<string, Type>(*$1, Type()); delete $1; }
+                            |       VALUE_CONSTRUCTOR OF type   { $$ = new pair<string, Type>(*$1, *$3); delete $1; delete $3; }
+                            ;
+
+type:       type_parameters IDENTIFIER  { $$ = new Type(COMPLEX, *$2, "", *$1); delete $1; delete $2; }
+    |       POLYMORPHIC_TYPE            { $$ = new Type(POLYMORPHIC, *$1); delete $1; }
+    ;
+
+type_parameters:    /* empty */ { $$ = new vector<Type>(); }
+               |    type        { $$ = new vector<Type>{*$1}; delete $1; }
+               |    '(' comma_separated_types ')' { $$ = $2; }
+               ;
+
+comma_separated_types:      type        { $$ = new vector<Type>{*$1}; delete $1; }
+                     |      comma_separated_types ',' type { $$ = $1; $1->push_back(*$3); delete $3; }
+                     ;
+
+// POLYMORPHIC_TYPES can be just a vector of strings
+// VALUE_CONSTRUCTORS is vector of pairs<string(identifier), types>
+// types is vector of types (lol)
+// type is type_name(string) and vector of subtypes.... recursively
 
 exp:        INTEGER_LITERAL	{ $$ = new Integer($1); }
         |   STRING_LITERAL	{ $$ = new String( *($1) ); }
