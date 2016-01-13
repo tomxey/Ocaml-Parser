@@ -113,7 +113,7 @@ value_constructor_definition:       VALUE_CONSTRUCTOR   { $$ = new pair<string, 
                             |       VALUE_CONSTRUCTOR OF type   { $$ = new pair<string, Type>(*$1, *$3); delete $1; delete $3; }
                             ;
 
-type:       type_parameters IDENTIFIER  { $$ = new Type(COMPLEX, *$2, "", *$1); delete $1; delete $2; }
+type:       type_parameters IDENTIFIER  { $$ = new Type(COMPLEX, *$2, *$1); delete $1; delete $2; }
     |       POLYMORPHIC_TYPE            { $$ = new Type(POLYMORPHIC, *$1); delete $1; }
     ;
 
@@ -134,6 +134,7 @@ comma_separated_types:      type        { $$ = new vector<Type>{*$1}; delete $1;
 exp:        INTEGER_LITERAL	{ $$ = new Integer($1); }
         |   STRING_LITERAL	{ $$ = new String( *($1) ); }
         |   FLOAT_LITERAL	{ $$ = new Float($1); }
+        |   VALUE_CONSTRUCTOR	{ $$ = new Identifier(*$1); }
         |   exp PLUS exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("+"), $1) , $3); }
         |   exp MINUS exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("-"), $1) , $3); }
         |   exp DIV exp         { $$ = new FunctionCall( new FunctionCall(new Identifier("/"), $1) , $3); }

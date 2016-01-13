@@ -22,8 +22,8 @@ class Type{
 public:
     //int polymorphic_helper_id;
 
-    Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::string constructor_name = "", std::vector<Type> type_parameters = std::vector<Type>())
-        : type_enum(type_enum), type_name(type_name), constructor_name(constructor_name), type_parameters(type_parameters){}
+    Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::vector<Type> type_parameters = std::vector<Type>())
+        : type_enum(type_enum), type_name(type_name), type_parameters(type_parameters){}
 
     //Type withExpected(Type expected_type);
     //Type getMoreGeneral(Type other_type);
@@ -38,14 +38,13 @@ public:
 
     TypeEnum type_enum;
     std::string type_name;
-    std::string constructor_name; // only used at runtime, at deduction time it should be equal to ""
     std::vector<Type> type_parameters;
 
     friend std::ostream& operator<<(std::ostream& os, const Type& val){
         if(val.type_enum == UNDETERMINED) os << "UNDETERMINED";
         else if(val.type_enum == POLYMORPHIC) os << "POLYMORPHIC: " << val.type_name;
         else if(val.type_enum == COMPLEX){
-            os << "COMPLEX: " << val.type_name << ' ' << val.constructor_name << ' ';
+            os << "COMPLEX: " << val.type_name << ' ';
             for(unsigned int i=0; i<val.type_parameters.size(); ++i) os << val.type_parameters[i] << ' ';
         }
         else if(val.type_enum == FUNCTION_TYPE) os << "FUNCTION_TYPE: " << val.type_parameters[0] << " -> " << val.type_parameters[1];
@@ -61,7 +60,7 @@ public:
     }
 
     bool operator==(const Type& other) const{
-        if(type_enum == other.type_enum && type_name == other.type_name && constructor_name == other.constructor_name && type_parameters == other.type_parameters) return true;
+        if(type_enum == other.type_enum && type_name == other.type_name && type_parameters == other.type_parameters) return true;
         else return false;
     }
 
@@ -72,10 +71,7 @@ public:
     bool operator<(const Type& other) const{
         if(type_enum == other.type_enum ){
             if(type_name == other.type_name ){
-                if(constructor_name == other.constructor_name ){
                     return type_parameters < other.type_parameters;
-                }
-                else return constructor_name < other.constructor_name;
             }
             else return type_name < other.type_name;
         }

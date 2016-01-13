@@ -42,7 +42,7 @@ public:
         return std::string(indents, ' ') + "TypeDef: " + type_name + "\n";
     }
     virtual Type deduceType(Environment& env, Type mostGeneralExpected){
-        return Type(); // return newly deduced type?
+        return env.addType(this);
     }
 
     virtual Value* execute(Environment& env){
@@ -220,7 +220,7 @@ public:
         ///else function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType().getMoreSpecific(mostGeneralExpected)}));
         Expression::deduceType(env, mostGeneralExpected);
 
-        Type function_expression_type = function_expression->deduceType(env, Type(FUNCTION_TYPE,"","",std::vector<Type>{env.getNewPolymorphicType(), mostGeneralExpected}));
+        Type function_expression_type = function_expression->deduceType(env, Type(FUNCTION_TYPE,"",std::vector<Type>{env.getNewPolymorphicType(), mostGeneralExpected}));
         Type argument_expression_type = argument_expression->deduceType(env, function_expression->exp_type.type_parameters[0]);
 
         env.addFunctionCallRelations(function_expression_type, argument_expression_type, exp_type);
@@ -262,9 +262,9 @@ public:
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
         env.addActivationFrame();
-            if(exp_type.type_enum == UNDETERMINED) exp_type = Type(FUNCTION_TYPE, "", "", std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType()});
+            if(exp_type.type_enum == UNDETERMINED) exp_type = Type(FUNCTION_TYPE, "", std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType()});
             if(env.followRelations(exp_type).type_enum == POLYMORPHIC){
-                env.addRelation(exp_type, Type(FUNCTION_TYPE, "", "", std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType()}));
+                env.addRelation(exp_type, Type(FUNCTION_TYPE, "", std::vector<Type>{env.getNewPolymorphicType(), env.getNewPolymorphicType()}));
                 exp_type = env.followRelations(exp_type);
             }
             env.addRelation(exp_type, mostGeneralExpected);
@@ -292,7 +292,7 @@ public:
 
 class BuiltIn_Function : public Value{
 public:
-    BuiltIn_Function(std::function<Value*(Value*)> fun, Type argument_type, Type return_type): fun(fun) { exp_type = Type(FUNCTION_TYPE,"","",std::vector<Type>{argument_type, return_type});}
+    BuiltIn_Function(std::function<Value*(Value*)> fun, Type argument_type, Type return_type): fun(fun) { exp_type = Type(FUNCTION_TYPE,"",std::vector<Type>{argument_type, return_type});}
     std::function<Value*(Value*)> fun;
 
     virtual Value* call(Environment& env, Value* argument) override {
@@ -306,14 +306,18 @@ public:
 
 class ComplexValue : public Value{
 public:
-    ComplexValue(Type type, std::vector<Value*> aggregatedValues): type(type), aggregatedValues(aggregatedValues){}
+    ComplexValue(Type type, std::string constructor_name, std::vector<Value*> aggregatedValues = std::vector<Value*>())
+        :constructor_name(constructor_name)
+        ,aggregatedValues(aggregatedValues)
+        { Expression::exp_type = type; }
 
-    Type type;
+    //Type type;
+    std::string constructor_name;
     std::vector<Value*> aggregatedValues;
 
     virtual std::string print(int indents) override {
         std::stringstream ss;
-        ss << std::string(indents, ' ') << type << ":" << std::endl;
+        ss << std::string(indents, ' ') << exp_type << ": " << constructor_name << " ";
         for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->print(indents + 1);
         return ss.str();
     }

@@ -90,7 +90,7 @@ Value *Environment::getValue(Identifier identifier)
     throw std::runtime_error("value not found for identifier: " + identifier.name);
 }
 
-void Environment::addType(TypeDefAST *type_def)
+Type Environment::addType(TypeDefAST *type_def)
 {
     std::vector<Type> type_parameters;
     std::set<std::string> parameters_set;
@@ -101,7 +101,7 @@ void Environment::addType(TypeDefAST *type_def)
     }
     if(parameters_set.size() != type_parameters.size()) throw std::runtime_error("parameter name used twice in type definition");
 
-    Type type_added(COMPLEX, type_def->type_name, "", type_parameters);
+    Type type_added(COMPLEX, type_def->type_name, type_parameters);
 
     if(type_constructors.find(Identifier(type_def->type_name)) == type_constructors.end()){
         type_constructors[Identifier(type_def->type_name)] = type_added;
@@ -109,6 +109,29 @@ void Environment::addType(TypeDefAST *type_def)
     else{
         throw std::runtime_error("type " + type_def->type_name + " already exists");
     }
+
+    // check if all types in Value Constructors exist
+
+    std::deque<Type*> Q;
+    for(std::pair<std::string, Type>& pair : type_def->constructors){
+        if(pair.second.type_enum != UNDETERMINED)  Q.push_back(&pair.second);
+    }
+
+    while(!Q.empty()){
+        Type* current = Q.front(); Q.pop_front();
+        if(current->type_enum == POLYMORPHIC){
+            if(parameters_set.find(current->type_name) == parameters_set.end()) throw std::runtime_error("using nonexisting type: " + current->type_name);
+        }
+        else{
+            Type type_constructed = getType(Identifier(current->type_name));
+            if(type_constructed.type_parameters.size() == current->type_parameters.size()){
+                for(Type& type : current->type_parameters){
+                    Q.push_back(&type);
+                }
+            }
+            else throw std::runtime_error("wrong number of parameters in type constructor: " + type_constructed.type_name);
+        }
+    } // while Q
 
     /// now it is time to add Value Constructors
     /// constructors wit argument will be functions, no-argument constructors will be ordinary variables
@@ -119,12 +142,27 @@ void Environment::addType(TypeDefAST *type_def)
                                                Type(COMPLEX, "pair", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), // argument type
                                                Type(POLYMORPHIC, "'a") )); // return complex type
 **/
+
+    for(std::pair<std::string, Type>& pair : type_def->constructors){
+        if(pair.second.type_enum == UNDETERMINED){
+            addValue(Identifier(pair.first), new ComplexValue(type_added, pair.first));
+        }
+        else{
+            ParseEssentials::toplevel_environment.addValue(Identifier(pair.first), // Constructor name
+                                                   new BuiltIn_Function([type_added,pair](Value* arg)->Value* //
+                                                    {return new ComplexValue(type_added, pair.first, std::vector<Value*>{arg});}, // return new complex value of type with specified constructor name, and argument as aggregatedValue
+                                                   pair.second, // argument type
+                                                   type_added )); // return complex type
+        }
+    } // for
+
+    return type_added;
 } // addType
 
 Type Environment::getType(Identifier identifier)
 {
     if(type_constructors.find(identifier) != type_constructors.end()) return renumeratedToUnique(type_constructors[identifier]);
-    else throw std::runtime_error("type " + identifier.name + " doean't exist");
+    else throw std::runtime_error("type " + identifier.name + " doesn't exist");
 }
 
 void Environment::cleanupAfterStatement()
@@ -140,11 +178,12 @@ Type Environment::followRelations(Type type, int depth)
 
     while(type.type_enum == POLYMORPHIC && type_relations[type].type_enum != UNDETERMINED){
         type = type_relations[type];
+        depth++;
     }
 
     if(type.type_parameters.size() > 0){
         for(unsigned int i=0; i<type.type_parameters.size(); ++i){
-            type.type_parameters[i] = followRelations(type.type_parameters[i], depth + 1);
+            type.type_parameters[i] = followRelations(type.type_parameters[i], depth);
         }
     }
 
