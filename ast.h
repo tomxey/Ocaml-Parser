@@ -32,7 +32,7 @@ public:
 
 class TypeDefAST : public Statement{
 public:
-    TypeDefAST(std::string type_name, std::vector<std::string> polymorphic_parameters_names, std::vector< std::pair<std::string, Type> > constructors = std::vector< std::pair<std::string, Type> >())
+    TypeDefAST(std::string type_name, std::vector<std::string> polymorphic_parameters_names = std::vector<std::string>(), std::vector< std::pair<std::string, Type> > constructors = std::vector< std::pair<std::string, Type> >())
         :type_name(type_name), polymorphic_parameters_names(polymorphic_parameters_names), constructors(constructors){
     }
 

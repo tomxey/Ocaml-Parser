@@ -37,6 +37,12 @@ int main(int argc, char **argv)
 
     ParseEssentials::toplevel_environment.addValue(Identifier("exit"), new BuiltIn_Function([](Value* arg)->Value* { exit( ((Integer*)arg)->value );}, Type(PRIMITIVE, "int"), Type(POLYMORPHIC, "'a") ));
 
+    /// primitive types definitions
+
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("int"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("bool"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("float"));;
+
   if ((argc > 1) && (freopen(argv[1], "r", stdin) == NULL))
   {
     cerr << argv[0] << ": File " << argv[1] << " cannot be opened.\n";
