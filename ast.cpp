@@ -3,10 +3,12 @@
 
 Value *Conditional::execute(Environment &env)
 {
+    Value* return_val;
     if( ((Bool*)condition->execute(env))->value == true ){
-        return true_path->execute(env);
+        return_val = true_path->execute(env);
     }
     else{
-        return false_path->execute(env);
+        return_val = false_path->execute(env);
     }
+    return return_val;
 }

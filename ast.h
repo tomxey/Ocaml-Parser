@@ -13,6 +13,8 @@
 #include "value.h"
 #include "parseessentials.h"
 
+//#define USE_STATICALLY_DEDUCED_TYPES
+
 class Environment;
 class Value;
 
@@ -69,6 +71,11 @@ public:
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Somevalue\n");}
 
+    /*virtual std::string print_with_type_forced(Type type, int indents = 0){
+        if(exp_type != type) throw std::runtime_error("forcing incompatible type. " + exp_type.to_string() + " != " + type.to_string());
+        else print(indents);
+    }*/
+
     virtual Value* execute(Environment& ) override {
         return this;
     }
@@ -89,11 +96,12 @@ public:
         exp_type = env.followRelations(exp_type);
         env.addRelation(exp_type, env.getIdentifierType(*this));
         env.setIdentifierType(*this, mostGeneralExpected);
-        return exp_type;
+        return exp_type = env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
-        return env.getValue(*this);
+        Value*  return_val = env.getValue(*this);
+        return return_val;
     }
 
     friend bool operator<(const Identifier& lhs, const Identifier& rhs){
@@ -169,15 +177,15 @@ public:
         in_expression->deduceType(env, env.getNewPolymorphicType()); // with new variable 'letted', deduce type of in_expression
         env.removeActivationFrame();
 
-        return env.followRelations(exp_type);
+        return exp_type = env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
         env.addActivationFrame();
         let_part->execute(env);
-        Value* return_value = in_expression->execute(env);
+        Value* return_val = in_expression->execute(env);
         env.removeActivationFrame();
-        return return_value;
+        return return_val;
     } // execute
 };
 
@@ -199,7 +207,7 @@ public:
         true_path->deduceType(env, exp_type);
         false_path->deduceType(env, exp_type);
 
-        return env.followRelations(exp_type);
+        return exp_type = env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override;
@@ -230,7 +238,8 @@ public:
 
     virtual Value* execute(Environment& env) override {
         Value* function_val = function_expression->execute(env);
-        return function_val->call(env, argument_expression->execute(env));;
+        Value* return_val = function_val->call(env, argument_expression->execute(env));;
+        return return_val;
     }
 };
 
@@ -271,7 +280,7 @@ public:
             env.addIdentifierToBeTypeDeduced(*arg_name, false, exp_type.type_parameters[0]);
             function_expression->deduceType(env, exp_type.type_parameters[1]);
         env.removeActivationFrame();
-        return env.followRelations(exp_type);
+        return exp_type = env.followRelations(exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
@@ -317,7 +326,7 @@ public:
 
     virtual std::string print(int indents) override {
         std::stringstream ss;
-        ss << std::string(indents, ' ') << exp_type << ": " << constructor_name << " ";
+        ss << std::string(indents, ' ') << constructor_name << ":\n";
         for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->print(indents + 1);
         return ss.str();
     }

@@ -145,7 +145,7 @@ Type Environment::addType(TypeDefAST *type_def)
 
     for(std::pair<std::string, Type>& pair : type_def->constructors){
         if(pair.second.type_enum == UNDETERMINED){
-            addValue(Identifier(pair.first), new ComplexValue(type_added, pair.first));
+            addValue(Identifier(pair.first), new ComplexValue( type_added , pair.first));
         }
         else{
             ParseEssentials::toplevel_environment.addValue(Identifier(pair.first), // Constructor name

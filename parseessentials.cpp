@@ -25,8 +25,8 @@ void ParseEssentials::parseStatement(Statement *statement)
     std::cout << statement->print(0) << std::endl;
 
     std::cout << getColorCode(WHITE_CODE, true, true) << "---------Determine Types---------------" << getColorCode(RESET_CODE) << std::endl;
+    Type type;
     try{
-        Type type;
         type = statement->deduceType(ParseEssentials::toplevel_environment, ParseEssentials::toplevel_environment.getNewPolymorphicType());
         //std::cout << "Relations:\n" << ParseEssentials::toplevel_environment.relationsToString();
         std::cout << "Deduced type: " << ParseEssentials::toplevel_environment.renumeratedToSmallest(type) << std::endl;
