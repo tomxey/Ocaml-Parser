@@ -90,6 +90,11 @@ Value *Environment::getValue(Identifier identifier)
     throw std::runtime_error("value not found for identifier: " + identifier.name);
 }
 
+bool Environment::valueExists(Identifier identifier)
+{
+    return variables.find(identifier) != variables.end();
+}
+
 Type Environment::addType(TypeDefAST *type_def)
 {
     std::vector<Type> type_parameters;
@@ -144,6 +149,8 @@ Type Environment::addType(TypeDefAST *type_def)
 **/
 
     for(std::pair<std::string, Type>& pair : type_def->constructors){
+        if(valueExists(Identifier(pair.first))) throw std::runtime_error("Value " + pair.first + " already exists in the environment");
+
         if(pair.second.type_enum == UNDETERMINED){
             addValue(Identifier(pair.first), new ComplexValue( type_added , pair.first));
         }

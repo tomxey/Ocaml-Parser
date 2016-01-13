@@ -31,6 +31,7 @@ public:
 
     void addValue(Identifier identifier, Value* value);
     Value* getValue(Identifier identifier);
+    bool valueExists(Identifier identifier);
 
     std::list< std::pair<Identifier, Type> > identifier_types;
 
