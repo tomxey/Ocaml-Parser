@@ -7,6 +7,7 @@
 #include <iostream>
 #include <functional>
 #include <cassert>
+#include <set>
 #include <sstream>
 #include "environment.h"
 #include "vartype.h"
@@ -64,6 +65,8 @@ public:
     virtual Value* call(Environment& env, Value* argument){ throw std::runtime_error("expression not callable"); }
 
     virtual bool isValue() { return false; }
+    virtual bool isValidPattern(std::set<std::string>& ) {return false;}
+    virtual bool isIdentifier(){return false;}
 };
 
 class Value : public Expression{
@@ -81,6 +84,32 @@ public:
     }
 
     virtual bool isValue() override { return true; }
+
+    virtual bool isValidPattern(std::set<std::string>&) override{return true;}
+
+    //virtual bool matchWithValue(Value* other) = 0;
+};
+
+class UnboundPatternVariable : public Value{
+public:
+
+    UnboundPatternVariable(std::string name): name(name) {}
+
+    std::string name;
+
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("UnboundPatternVariable: ") + name + "\n";}
+
+    virtual Type deduceType(Environment&, Type) override {
+        throw std::runtime_error("deduceType() function shoudn't be called for UnboundPatternVariable");
+    }
+
+    virtual Value* execute(Environment& env) override {
+        throw std::runtime_error("execute() function shoudn't be called for UnboundPatternVariable");
+    }
+
+    friend bool operator<(const UnboundPatternVariable& lhs, const UnboundPatternVariable& rhs){
+        return lhs.name < rhs.name;
+    }
 };
 
 class Identifier : public Value{
@@ -100,58 +129,88 @@ public:
     }
 
     virtual Value* execute(Environment& env) override {
-        Value*  return_val = env.getValue(*this);
-        return return_val;
+        if(env.execution_inside_pattern && std::isupper(name[0]) == false){
+            return new UnboundPatternVariable(name);// only identifiers are UnboundVariables
+        }
+        else{
+            Value*  return_val = env.getValue(*this);
+            return return_val;
+        }
     }
 
     friend bool operator<(const Identifier& lhs, const Identifier& rhs){
         return lhs.name < rhs.name;
     }
+
+    virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
+    {
+        if(variables_occuring.find(name) != variables_occuring.end()) return false;
+        else{
+            variables_occuring.insert(name);
+            return true;
+        }
+    }
+
+    virtual bool isIdentifier() override{return true;}
 };
 
 class Let : public Statement{
 public:
-    Let(Identifier* identifier, Expression* expression, bool recursive): identifier(identifier), expression(expression), recursive(recursive){}
+    Let(Expression* pattern, Expression* expression, bool recursive): pattern(pattern), expression(expression), recursive(recursive){}
 
-    Identifier* identifier;
+    Expression* pattern;
     Expression* expression;
+    Value*      pattern_value;
     bool recursive;
 
-    virtual std::string print(int indents) override {return std::string(indents, ' ') + (recursive?std::string("Let rec: \n"):std::string("Let: \n")) + identifier->print(indents+1) + expression->print(indents+1);}
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + (recursive?std::string("Let rec: \n"):std::string("Let: \n")) + pattern->print(indents+1) + expression->print(indents+1);}
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
-        if(identifier->exp_type.type_enum == UNDETERMINED) identifier->exp_type = env.getNewPolymorphicType();
+        if(pattern->exp_type.type_enum == UNDETERMINED) pattern->exp_type = env.getNewPolymorphicType();
         if(expression->exp_type.type_enum == UNDETERMINED) expression->exp_type = env.getNewPolymorphicType();
 
-        env.addRelation(identifier->exp_type, expression->exp_type);
+        std::set<std::string> pattern_parameters;
+        if(!pattern->isValidPattern(pattern_parameters)) throw std::runtime_error("pattern not valid");
+
+        env.addRelation(pattern->exp_type, expression->exp_type);
 
         if(recursive){
-            if(expression->isValue()){
-                env.addIdentifierToBeTypeDeduced(*identifier, false, identifier->exp_type);
+            if(expression->isValue() && pattern->isIdentifier()){
+                env.addIdentifierToBeTypeDeduced(*(Identifier*)pattern, false, pattern->exp_type);
                 expression->deduceType(env, mostGeneralExpected);
-                env.setIdentifierType(*identifier, env.followRelations(identifier->exp_type));
+                env.setIdentifierType(*(Identifier*)pattern, env.followRelations(pattern->exp_type));
             }
-            else throw std::runtime_error("using rec keyword on non value");
+            else throw std::runtime_error("using rec keyword on non value or using rec on non identifier");
         }
         else{
             expression->deduceType(env, mostGeneralExpected); // deduce before adding it to identifier list, so it wont be visible recursively
-            env.addIdentifierToBeTypeDeduced(*identifier, false, env.followRelations(identifier->exp_type));
+            for(std::string param : pattern_parameters){
+                env.addIdentifierToBeTypeDeduced(Identifier(param), false, env.getNewPolymorphicType());
+            }
+            pattern->deduceType(env, pattern->exp_type);
         }
 
-        return env.getIdentifierType(*identifier);
+        // mark that it is executed inside a pattern so Identifiers will be treated as UnboundVariables instead of trying to resolve them in the Environment, which will cause an error
+        env.execution_inside_pattern = true;
+        pattern_value = pattern->execute(env);
+        env.execution_inside_pattern = false;
+
+        return env.followRelations(pattern->exp_type);
     }
 
     virtual Value* execute(Environment& env) override {
         if(recursive){
-            if(expression->isValue()){
-                env.addValue(*identifier, static_cast<Value*>(expression));
+            if(expression->isValue() && pattern->isIdentifier()){
+                env.addValue(*(Identifier*)pattern, static_cast<Value*>(expression));
                 expression->execute(env);
                 return nullptr;
             }
-            else throw std::runtime_error("using rec keyword on non value");
+            else throw std::runtime_error("using rec keyword on non value or using rec on non identifier");
         }
         else{
-            Value* expression_result = expression->execute(env);
-            env.addValue(*identifier, expression_result);
+            throw std::runtime_error("unimplemented");
+            /// pattern match here
+            //Value* expression_result = expression->execute(env);
+            //env.addValue(*identifier, expression_result);
             return nullptr;
         }
     } // execute
@@ -159,13 +218,13 @@ public:
 
 class LetIn : public Expression{
 public:
-    LetIn(Identifier* identifier, Expression* expression, bool recursive, Expression* in_expression)
-        :in_expression(in_expression){ let_part = new Let(identifier, expression, recursive); }
+    LetIn(Let* let_statement, Expression* in_expression)
+        :let_statement(let_statement), in_expression(in_expression){}
 
-    Let* let_part;
+    Let* let_statement;
     Expression* in_expression;
 
-    virtual std::string print(int indents) override {return let_part->print(indents+1) + in_expression->print(indents+1);}
+    virtual std::string print(int indents) override {return let_statement->print(indents+1) + in_expression->print(indents+1);}
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
         Expression::deduceType(env, mostGeneralExpected);
         if(in_expression->exp_type.type_enum == UNDETERMINED) in_expression->exp_type = env.getNewPolymorphicType();
@@ -173,7 +232,7 @@ public:
         env.addRelation(exp_type, in_expression->exp_type);
 
         env.addActivationFrame();
-        let_part->deduceType(env, env.getNewPolymorphicType());
+        let_statement->deduceType(env, env.getNewPolymorphicType());
         in_expression->deduceType(env, env.getNewPolymorphicType()); // with new variable 'letted', deduce type of in_expression
         env.removeActivationFrame();
 
@@ -182,7 +241,7 @@ public:
 
     virtual Value* execute(Environment& env) override {
         env.addActivationFrame();
-        let_part->execute(env);
+        let_statement->execute(env);
         Value* return_val = in_expression->execute(env);
         env.removeActivationFrame();
         return return_val;
@@ -240,6 +299,14 @@ public:
         Value* function_val = function_expression->execute(env);
         Value* return_val = function_val->call(env, argument_expression->execute(env));;
         return return_val;
+    }
+
+    virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
+    {
+        if(function_expression->isIdentifier()){
+            if(std::isupper(((Identifier*)function_expression)->name[0]) == false) return false;
+        }
+        return argument_expression->isValidPattern(variables_occuring) && function_expression->isValidPattern(variables_occuring);
     }
 };
 
@@ -329,6 +396,15 @@ public:
         ss << std::string(indents, ' ') << constructor_name << ":\n";
         for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->print(indents + 1);
         return ss.str();
+    }
+
+    virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
+    {
+        bool ok = true;
+        for(Value* val : aggregatedValues){
+            ok = ok | val->isValidPattern(variables_occuring);
+        }
+        return ok;
     }
 };
 

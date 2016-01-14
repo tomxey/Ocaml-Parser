@@ -16,7 +16,7 @@ class TypeDefAST;
 class Environment
 {
 public:
-    Environment():polymorphic_types_in_statement(0){}
+    Environment():polymorphic_types_in_statement(0), execution_inside_pattern(false){}
 
     void addActivationFrame();
     void removeActivationFrame();
@@ -56,6 +56,8 @@ public:
     Type renumeratedToUnique(Type type);
 
     std::string relationsToString();
+
+    bool execution_inside_pattern;
 
 private:
     Type doRenumerations(Type type, std::map<Type, Type>& renumerations);
