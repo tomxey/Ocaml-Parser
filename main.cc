@@ -34,17 +34,29 @@ int main(int argc, char **argv)
     DEFINE_CURRIED_FUNCTION("<>",a, b, return new Bool(!a->equals(b));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
     DEFINE_CURRIED_FUNCTION("==",a, b, return new Bool(a==b);, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
     DEFINE_CURRIED_FUNCTION("!=",a, b, return new Bool(a!=b);, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("<",a, b, return new Bool(a->smallerThan(b));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("<=",a, b, return new Bool(!b->smallerThan(a));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION(">",a, b, return new Bool(b->smallerThan(a));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION(">=",a, b, return new Bool(!a->smallerThan(b));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("+.",a, b, return new Float(((Float*)a)->value + ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
+    DEFINE_CURRIED_FUNCTION("-.",a, b, return new Float(((Float*)a)->value - ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
+    DEFINE_CURRIED_FUNCTION("*.",a, b, return new Float(((Float*)a)->value * ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
+    DEFINE_CURRIED_FUNCTION("/.",a, b, return new Float(((Float*)a)->value / ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
+    DEFINE_CURRIED_FUNCTION("^",a, b, return new String(((String*)a)->value + ((String*)b)->value);, Type(PRIMITIVE, "string"), Type(PRIMITIVE, "string"), Type(PRIMITIVE, "string"));
+    DEFINE_CURRIED_FUNCTION("||",a, b, return new Bool(((Bool*)a)->value || ((Bool*)b)->value);, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("&&",a, b, return new Bool(((Bool*)a)->value && ((Bool*)b)->value);, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"));
 
     ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "2tuple",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));
     ParseEssentials::toplevel_environment.addValue(Identifier("snd"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[1];}, Type(COMPLEX, "2tuple",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'b") ));
-
     ParseEssentials::toplevel_environment.addValue(Identifier("exit"), new BuiltIn_Function([](Value* arg)->Value* { exit( ((Integer*)arg)->value );}, Type(PRIMITIVE, "int"), Type(POLYMORPHIC, "'a") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("not"), new BuiltIn_Function([](Value* arg)->Value* {return new Bool(!(((Bool*)arg)->value));}, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool") ));
 
     /// primitive types definitions
 
     ParseEssentials::toplevel_environment.addType(new TypeDefAST("int"));;
     ParseEssentials::toplevel_environment.addType(new TypeDefAST("bool"));;
     ParseEssentials::toplevel_environment.addType(new TypeDefAST("float"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("string"));;
 
   if ((argc > 1) && (freopen(argv[1], "r", stdin) == NULL))
   {

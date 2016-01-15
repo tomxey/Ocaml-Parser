@@ -20,6 +20,7 @@ string_const      \"[^\"]*\"
 value_constructor [A-Z][a-zA-Z0-9_]*
 polymorphic_type  '[a-z]+
 
+operator        [\!\$\%\&\*\+\-\.\/\:\<\=\>\?\@\^\|\~]
 infix_op        [\=\<\>\@\^\|\&\+\-\*\/\$\%]+
 prefix_op       [\!\?\~]+
 
@@ -45,14 +46,16 @@ prefix_op       [\!\?\~]+
 {ident}         { yylval.string_val = new std::string(yytext); return IDENTIFIER; }
 
 [-]?{int_const}		{ yylval.int_val = atoi(yytext); return INTEGER_LITERAL; }
-{string_const}          { yylval.string_val = new std::string(yytext); return STRING_LITERAL; }
+{string_const}          { yylval.string_val = new std::string(yytext+1); yylval.string_val->resize(yylval.string_val->size()-1); return STRING_LITERAL; }
 [-]?{float_const}           { yylval.float_val = atof(yytext); return FLOAT_LITERAL; }
 {value_constructor}     { yylval.string_val = new std::string(yytext); return VALUE_CONSTRUCTOR; }
 {polymorphic_type}      { yylval.string_val = new std::string(yytext); return POLYMORPHIC_TYPE; }
 
+\([ ]*{operator}*[ ]*\)           { const char *begin, *end; begin = yytext + 1; while( *begin == ' ' ) begin++; end = begin; while( *end != ' ' && *end != ')' ) end++;
+                                        yylval.string_val = new std::string(begin, end - begin); return IDENTIFIER;}
 [\(\)\{\}:;,\|\+\-\*/=]   { return yytext[0]; }
-{infix_op}              { yylval.string_val = new std::string(yytext); return INFIX_OP; }
-{prefix_op}             { yylval.string_val = new std::string(yytext); return PREFIX_OP; }
+{infix_op}{operator}*     { yylval.string_val = new std::string(yytext); return INFIX_OP; }
+{prefix_op}{operator}*    { yylval.string_val = new std::string(yytext); return PREFIX_OP; }
 
 [ \t]*		{}
 [\n]		{ yylineno++;}

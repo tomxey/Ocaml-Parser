@@ -16,7 +16,8 @@ Value *Conditional::execute(Environment &env)
 
 bool Value::equals(Value *other)
 {
-    int comparedClasses = this->getValueClassID();
+    return this->smallerThan(other) == other->smallerThan(this);
+    /*int comparedClasses = this->getValueClassID();
     if( comparedClasses == other->getValueClassID() ){
         // class specific checks
         if( comparedClasses == UNBOUND_VALUE_VARIABLE_CLASS_ID){
@@ -54,6 +55,44 @@ bool Value::equals(Value *other)
             else return false;
         }
         else throw std::runtime_error("comparing unknown Value Classes!");
+    }
+    else throw std::runtime_error("comparing values of different Classes");*/
+} // equals
+
+bool Value::smallerThan(Value *other)
+{
+    int comparedClasses = this->getValueClassID();
+    if( comparedClasses == other->getValueClassID() ){
+        if( comparedClasses == COMPLEX_VALUE_CLASS_ID){
+            if( ((ComplexValue*)this)->constructor_name < ((ComplexValue*)other)->constructor_name) return true;
+            else if( ((ComplexValue*)this)->constructor_name > ((ComplexValue*)other)->constructor_name) return false;
+            else{
+                for(unsigned int i = 0; i < ((ComplexValue*)this)->aggregatedValues.size() ; ++i){
+                    if( ((ComplexValue*)this)->aggregatedValues[i]->smallerThan(((ComplexValue*)other)->aggregatedValues[i])) return true;
+                    if( ((ComplexValue*)other)->aggregatedValues[i]->smallerThan(((ComplexValue*)this)->aggregatedValues[i])) return false;
+                }
+                return false;
+            }
+        }
+        else if( comparedClasses == PRIMITIVE_CLASS_ID){
+            if(exp_type.type_name == other->exp_type.type_name){
+                if(exp_type.type_name == "int"){
+                    return ((Integer*)this)->value < ((Integer*)other)->value;
+                }
+                else if(exp_type.type_name == "float"){
+                    return ((Float*)this)->value < ((Float*)other)->value;
+                }
+                else if(exp_type.type_name == "bool"){
+                    return ((Bool*)this)->value < ((Bool*)other)->value;
+                }
+                else if(exp_type.type_name == "string"){
+                    return ((String*)this)->value < ((String*)other)->value;
+                }
+                else throw std::runtime_error("comparing unknown Primitive Value Classes");
+            }
+            else throw std::runtime_error("comparing primitives of different types: " + exp_type.type_name + " and " + other->exp_type.type_name);
+        }
+        else throw std::runtime_error("comparing uncomparable Value Classes!");
     }
     else throw std::runtime_error("comparing values of different Classes");
 }

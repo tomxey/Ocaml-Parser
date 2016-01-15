@@ -96,6 +96,7 @@ public:
 
     /// IMPORTANT!!! draw a graph of all Value classes, and resolve the problem
     virtual bool equals(Value* other);
+    virtual bool smallerThan(Value* other);
     virtual bool matchWithValue(Value* other);
     virtual void applyMatch(Value* other, Environment& env);
 
@@ -135,11 +136,17 @@ public:
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Identifier: ") + name + "\n";}
 
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
-        Expression::deduceType(env, mostGeneralExpected);
-        exp_type = env.followRelations(exp_type);
-        env.addRelation(exp_type, env.getIdentifierType(*this));
-        env.setIdentifierType(*this, mostGeneralExpected);
-        return exp_type = env.followRelations(exp_type);
+        if(name == "_"){
+            if(env.execution_inside_pattern) return exp_type = mostGeneralExpected;
+            else throw std::runtime_error("using wildcard _ outside of pattern");
+        }
+        else{
+            Expression::deduceType(env, mostGeneralExpected);
+            exp_type = env.followRelations(exp_type);
+            env.addRelation(exp_type, env.getIdentifierType(*this));
+            env.setIdentifierType(*this, mostGeneralExpected);
+            return exp_type = env.followRelations(exp_type);
+        }
     }
 
     virtual Value* execute(Environment& env) override {
@@ -158,7 +165,7 @@ public:
 
     virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
     {
-        if(std::isupper(name[0])) return true;
+        if(std::isupper(name[0]) || name == "_") return true;
         else{
             if(variables_occuring.find(name) != variables_occuring.end()) throw std::runtime_error("variable occuring twice inside of pattern: " + name);
             else{
@@ -205,7 +212,9 @@ public:
             for(std::string param : pattern_parameters){
                 env.addIdentifierToBeTypeDeduced(Identifier(param), false, env.getNewPolymorphicType());
             }
+            env.execution_inside_pattern = true;
             pattern->deduceType(env, pattern->exp_type);
+            env.execution_inside_pattern = false;
         }
 
         // mark that it is executed inside a pattern so Identifiers will be treated as UnboundVariables instead of trying to resolve them in the Environment, which will cause an error
@@ -404,9 +413,8 @@ public:
             for(std::string param : pattern_parameters){
                 env.addIdentifierToBeTypeDeduced(Identifier(param), false, env.getNewPolymorphicType());
             }
-            pattern->deduceType(env, pattern->exp_type);
-
             env.execution_inside_pattern = true;
+            pattern->deduceType(env, pattern->exp_type);
             patterns_values[i++] = pattern->execute(env);
             env.execution_inside_pattern = false;
 
@@ -591,7 +599,7 @@ public:
 
     std::string value;
 
-    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("String: ") + value + "\n";}
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("String: \"") + value + "\"\n";}
 };
 
 #endif // AST_H
