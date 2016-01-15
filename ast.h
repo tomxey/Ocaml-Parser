@@ -16,6 +16,13 @@
 
 //#define USE_STATICALLY_DEDUCED_TYPES
 
+#define UNBOUND_VALUE_VARIABLE_CLASS_ID 0
+#define IDENTIFIER_CLASS_ID 1
+#define FUNCTION_CLASS_ID 2
+#define BUILT_IN_FUNCTION_CLASS_ID 3
+#define COMPLEX_VALUE_CLASS_ID 4
+#define PRIMITIVE_CLASS_ID 5
+
 class Environment;
 class Value;
 
@@ -87,7 +94,12 @@ public:
 
     virtual bool isValidPattern(std::set<std::string>&) override{return true;}
 
-    //virtual bool matchWithValue(Value* other) = 0;
+    /// IMPORTANT!!! draw a graph of all Value classes, and resolve the problem
+    virtual bool equals(Value* other);
+    virtual bool matchWithValue(Value* other);
+    virtual void applyMatch(Value* other, Environment& env);
+
+    virtual int getValueClassID() = 0; // should it be a method? or a field?
 };
 
 class UnboundPatternVariable : public Value{
@@ -110,6 +122,8 @@ public:
     friend bool operator<(const UnboundPatternVariable& lhs, const UnboundPatternVariable& rhs){
         return lhs.name < rhs.name;
     }
+
+    virtual int getValueClassID() override{return UNBOUND_VALUE_VARIABLE_CLASS_ID;}
 };
 
 class Identifier : public Value{
@@ -152,6 +166,8 @@ public:
     }
 
     virtual bool isIdentifier() override{return true;}
+
+    virtual int getValueClassID() override{return IDENTIFIER_CLASS_ID;}
 };
 
 class Let : public Statement{
@@ -207,10 +223,9 @@ public:
             else throw std::runtime_error("using rec keyword on non value or using rec on non identifier");
         }
         else{
-            throw std::runtime_error("unimplemented");
-            /// pattern match here
-            //Value* expression_result = expression->execute(env);
-            //env.addValue(*identifier, expression_result);
+            Value* expression_result = expression->execute(env);
+            if(pattern_value->matchWithValue(expression_result)) pattern_value->applyMatch(expression_result, env);
+            else throw std::runtime_error("Failed to match!");
             return nullptr;
         }
     } // execute
@@ -363,6 +378,7 @@ public:
         }
     }
 
+    virtual int getValueClassID() override{return FUNCTION_CLASS_ID;}
 };
 
 
@@ -378,6 +394,8 @@ public:
     virtual Value* execute(Environment& env) override {
         return this;
     }
+
+    virtual int getValueClassID() override{return BUILT_IN_FUNCTION_CLASS_ID;}
 };
 
 class ComplexValue : public Value{
@@ -406,19 +424,26 @@ public:
         }
         return ok;
     }
+
+    virtual int getValueClassID() override{return COMPLEX_VALUE_CLASS_ID;}
 };
 
 class Primitive : public Value{
 public:
+
+    virtual int getValueClassID() override{return PRIMITIVE_CLASS_ID;}
 };
 
 class Integer : public Primitive{
 public:
-    Integer(int value): value(value){exp_type = Type(PRIMITIVE, "int");}
+
+    Integer(int value):value(value){exp_type = Type(PRIMITIVE, "int");}
 
     int value;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Integer: ") + std::to_string(value) + "\n";}
+
+    virtual int getValueClassID() override{return PRIMITIVE_CLASS_ID;}
 };
 
 class Float : public Primitive{
