@@ -72,7 +72,7 @@ public:
     virtual Value* call(Environment& env, Value* argument){ throw std::runtime_error("expression not callable"); }
 
     virtual bool isValue() { return false; }
-    virtual bool isValidPattern(std::set<std::string>& ) {return false;}
+    virtual bool isValidPattern(std::set<std::string>& ) { throw std::runtime_error("forbidden syntax element inside of pattern"); }
     virtual bool isIdentifier(){return false;}
 };
 
@@ -158,10 +158,13 @@ public:
 
     virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
     {
-        if(variables_occuring.find(name) != variables_occuring.end()) return false;
+        if(std::isupper(name[0])) return true;
         else{
-            variables_occuring.insert(name);
-            return true;
+            if(variables_occuring.find(name) != variables_occuring.end()) throw std::runtime_error("variable occuring twice inside of pattern: " + name);
+            else{
+                variables_occuring.insert(name);
+                return true;
+            }
         }
     }
 
@@ -185,7 +188,7 @@ public:
         if(expression->exp_type.type_enum == UNDETERMINED) expression->exp_type = env.getNewPolymorphicType();
 
         std::set<std::string> pattern_parameters;
-        if(!pattern->isValidPattern(pattern_parameters)) throw std::runtime_error("pattern not valid");
+        pattern->isValidPattern(pattern_parameters);
 
         env.addRelation(pattern->exp_type, expression->exp_type);
 
@@ -319,9 +322,49 @@ public:
     virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
     {
         if(function_expression->isIdentifier()){
-            if(std::isupper(((Identifier*)function_expression)->name[0]) == false) return false;
+            if(std::isupper(((Identifier*)function_expression)->name[0]) == false) throw std::runtime_error("calling not ValueConstructor function in pattern");
         }
         return argument_expression->isValidPattern(variables_occuring) && function_expression->isValidPattern(variables_occuring);
+    }
+};
+
+class TupleCreation : public Expression{
+public:
+    TupleCreation(std::vector<Expression*>* tuple_elements): tuple_elements(tuple_elements) {}
+
+    std::vector<Expression*>* tuple_elements;
+
+    virtual std::string print(int indents) override {
+        std::string result = std::string(indents, ' ') + std::string("Tuple Creation:\n");
+        for(Expression* exp : *tuple_elements){
+            result += exp->print(indents + 1);
+        }
+        return result;
+    }
+
+    virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
+        Expression::deduceType(env, mostGeneralExpected);
+        Type tuple_type(COMPLEX, std::to_string(tuple_elements->size()) + "tuple" );
+
+        for(unsigned int i = 0; i < tuple_elements->size(); ++i){
+            tuple_type.type_parameters.push_back(env.getNewPolymorphicType());
+            tuple_elements->operator [](i)->deduceType(env, tuple_type.type_parameters.back());
+        }
+
+        env.addRelation(exp_type, tuple_type);
+
+        return exp_type = env.followRelations(exp_type);
+    }
+
+    virtual Value* execute(Environment& env) override;
+
+    virtual bool isValidPattern(std::set<std::string>& variables_occuring) override
+    {
+        bool ok = true;
+        for(Expression* elem : *tuple_elements){
+            ok = ok | elem->isValidPattern(variables_occuring);
+        }
+        return ok;
     }
 };
 
@@ -387,6 +430,8 @@ public:
     BuiltIn_Function(std::function<Value*(Value*)> fun, Type argument_type, Type return_type): fun(fun) { exp_type = Type(FUNCTION_TYPE,"",std::vector<Type>{argument_type, return_type});}
     std::function<Value*(Value*)> fun;
 
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("BuiltIn Function\n");}
+
     virtual Value* call(Environment& env, Value* argument) override {
         return fun.operator()(argument);
     }
@@ -411,8 +456,9 @@ public:
 
     virtual std::string print(int indents) override {
         std::stringstream ss;
-        ss << std::string(indents, ' ') << constructor_name << ":\n";
+        ss << std::string(indents, ' ') << constructor_name << "(";
         for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->print(indents + 1);
+        ss << ")";
         return ss.str();
     }
 

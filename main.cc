@@ -29,7 +29,11 @@ int main(int argc, char **argv)
     DEFINE_CURRIED_FUNCTION("-",a, b, return new Integer(((Integer*)a)->value - ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
     DEFINE_CURRIED_FUNCTION("*",a, b, return new Integer(((Integer*)a)->value * ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
     DEFINE_CURRIED_FUNCTION("/",a, b, if(((Integer*)b)->value == 0) throw std::runtime_error("division by zero at: " + to_string(((Integer*)a)->value) + " / 0"); return new Integer(((Integer*)a)->value / ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
-    DEFINE_CURRIED_FUNCTION("=",a, b, return new Bool(((Integer*)a)->value == ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("%",a, b, if(((Integer*)b)->value == 0) throw std::runtime_error("division by zero at: " + to_string(((Integer*)a)->value) + " % 0"); return new Integer(((Integer*)a)->value % ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
+    DEFINE_CURRIED_FUNCTION("=",a, b, return new Bool(a->equals(b));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("<>",a, b, return new Bool(!a->equals(b));, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("==",a, b, return new Bool(a==b);, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
+    DEFINE_CURRIED_FUNCTION("!=",a, b, return new Bool(a!=b);, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
 
     DEFINE_CURRIED_FUNCTION("Pair",a, b, return new ComplexValue(Type(COMPLEX, "pair",std::vector<Type>{a->exp_type, b->exp_type}), "Pair",std::vector<Value*>{a, b});, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b"), Type(COMPLEX, "pair",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}));
     ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "pair",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));

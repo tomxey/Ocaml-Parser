@@ -43,13 +43,24 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const Type& val){
         if(val.type_enum == UNDETERMINED) os << "UNDETERMINED";
-        else if(val.type_enum == POLYMORPHIC) os << "POLYMORPHIC: " << val.type_name;
+        else if(val.type_enum == POLYMORPHIC) os << val.type_name;
         else if(val.type_enum == COMPLEX){
-            os << "COMPLEX: " << val.type_name << ' ';
-            for(unsigned int i=0; i<val.type_parameters.size(); ++i) os << val.type_parameters[i] << ' ';
+            if(std::isdigit(val.type_name[0])){ // if displaying tuple type
+                os << '(';
+                for(unsigned int i=0; i<val.type_parameters.size(); ++i) os << val.type_parameters[i] << (i==val.type_parameters.size()-1?"":"*");
+                os << ')';
+            }
+            else{
+                if( val.type_parameters.size() > 0){
+                    os << '(';
+                    for(unsigned int i=0; i<val.type_parameters.size(); ++i) os << val.type_parameters[i] << (i==val.type_parameters.size()-1?"":",");
+                    os << ')';
+                }
+                os << val.type_name << ' ';
+            }
         }
-        else if(val.type_enum == FUNCTION_TYPE) os << "FUNCTION_TYPE: " << val.type_parameters[0] << " -> " << val.type_parameters[1];
-        else os << "PRIMITIVE: " << val.type_name;
+        else if(val.type_enum == FUNCTION_TYPE) os << '(' << val.type_parameters[0] << " -> " << val.type_parameters[1] << ')';
+        else os << val.type_name;
 
         return os;
     }

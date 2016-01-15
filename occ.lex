@@ -28,11 +28,6 @@ polymorphic_type  '{small_letter}+
 {float_const}           { yylval.float_val = atof(yytext); return FLOAT_LITERAL; }
 {value_constructor}     { yylval.string_val = new std::string(yytext); return VALUE_CONSTRUCTOR; }
 {polymorphic_type}      { yylval.string_val = new std::string(yytext); return POLYMORPHIC_TYPE; }
-"+"                     { yylval.string_val = new std::string(yytext); return PLUS; }
-"-"                     { yylval.string_val = new std::string(yytext); return MINUS; }
-"*"			{ yylval.string_val = new std::string(yytext); return MULT; }
-"/"                     { yylval.string_val = new std::string(yytext); return DIV; }
-"="			{ yylval.string_val = new std::string(yytext); return EQUALS; }
 "let"           { yylval.string_val = new std::string(yytext); return LET; }
 "rec"		{ yylval.string_val = new std::string(yytext); return REC; }
 "in"            { yylval.string_val = new std::string(yytext); return IN; }
@@ -44,7 +39,7 @@ polymorphic_type  '{small_letter}+
 "type"            { yylval.string_val = new std::string(yytext); return TYPE; }
 "of"            { yylval.string_val = new std::string(yytext); return OF; }
 ";;"            { yylval.string_val = new std::string(yytext); return SEMIC2; }
-[\(\)\{\}:;,|]   { return yytext[0]; }
+[\(\)\{\}:;,\|\+\-\*/=]   { return yytext[0]; }
 {ident}         { yylval.string_val = new std::string(yytext); return IDENTIFIER; }
 
 [ \t]*		{}

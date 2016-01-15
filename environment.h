@@ -16,7 +16,7 @@ class TypeDefAST;
 class Environment
 {
 public:
-    Environment():polymorphic_types_in_statement(0), execution_inside_pattern(false){}
+    Environment():polymorphic_types_in_statement(0), execution_inside_pattern(false){ displayed_values = 0; }
 
     void addActivationFrame();
     void removeActivationFrame();
@@ -32,6 +32,9 @@ public:
     void addValue(Identifier identifier, Value* value);
     Value* getValue(Identifier identifier);
     bool valueExists(Identifier identifier);
+
+    int displayed_values;
+    void printNewValues();
 
     std::list< std::pair<Identifier, Type> > identifier_types;
 

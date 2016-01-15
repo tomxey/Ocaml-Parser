@@ -16,7 +16,7 @@ extern "C" FILE *yyin;
   bool          bool_val;
   AST*          ast_elem;
   Statement*    statement;
-  Expression*   expresion;
+  Expression*   expression;
   Identifier*   identifier;
   Type*         type;
   vector<Type>* types;
@@ -25,6 +25,7 @@ extern "C" FILE *yyin;
   pair<string, Type>*       value_constructor_definition;
   vector< pair<string, Type> >*  value_constructors_definitions;
   Let*      let_statement;
+  vector<Expression*>* comma_separated_expressions;
 }
 
 %start	input 
@@ -38,8 +39,8 @@ extern "C" FILE *yyin;
 
 %type	<statement>	statement
 %type	<statements>	statements
-%type	<expresion>	exp
-%type	<expresion>	pattern
+%type	<expression>	exp
+%type	<expression>	pattern
 %type	<bool_val>	RECS
 %type   <strings>       polymorphic_types_list
 %type   <strings>       comma_separated_polymorphic_types
@@ -52,6 +53,11 @@ extern "C" FILE *yyin;
 %type   <value_constructor_definition>      value_constructor_definition
 
 %type   <let_statement> let_statement
+
+%type   <comma_separated_expressions>   comma_separated_expressions
+%type   <expression>    tuple
+%type   <type>          tuple_type
+%type   <types>         asterisk_separated_types
 
 // %left associative a + b + c = (a + b) + c
 // %right associative ...
@@ -76,10 +82,10 @@ extern "C" FILE *yyin;
 %right	IF
 %right	THEN ELSE
 
-%left	EQUALS
+%left	'='
 
-%left	PLUS MINUS
-%left	MULT DIV
+%left	'+' '-'
+%left	'*' '/'
 
 %left FUNAPPLY
 %left SEMIC2
@@ -96,7 +102,7 @@ statements:     statement               { $$ = new vector<Statement*>{$1}; }
 
 statement:      exp SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
         |       let_statement SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
-        |       TYPE polymorphic_types_list IDENTIFIER EQUALS value_constructors_definitions SEMIC2 { $$ = new TypeDefAST(*$3, *$2, *$5); delete $2; delete $3; delete $5; ParseEssentials::parseStatement($$); }
+        |       TYPE polymorphic_types_list IDENTIFIER '=' value_constructors_definitions SEMIC2 { $$ = new TypeDefAST(*$3, *$2, *$5); delete $2; delete $3; delete $5; ParseEssentials::parseStatement($$); }
         ;
 
 
@@ -120,10 +126,11 @@ value_constructor_definition:       VALUE_CONSTRUCTOR   { $$ = new pair<string, 
 
 type:       type_parameters IDENTIFIER  { $$ = new Type(COMPLEX, *$2, *$1); delete $1; delete $2; }
     |       POLYMORPHIC_TYPE            { $$ = new Type(POLYMORPHIC, *$1); delete $1; }
+    |       tuple_type                  { $$ = $1; }
+    |       '(' type ')'                { $$ = $2; }
     ;
 
 type_parameters:    /* empty */ { $$ = new vector<Type>(); }
-               |    type        { $$ = new vector<Type>{*$1}; delete $1; }
                |    '(' comma_separated_types ')' { $$ = $2; }
                ;
 
@@ -137,11 +144,11 @@ comma_separated_types:      type        { $$ = new vector<Type>{*$1}; delete $1;
 // type is type_name(string) and vector of subtypes.... recursively
 
 exp:        pattern             { $$ = $1; }
-        |   exp PLUS exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("+"), $1) , $3); }
-        |   exp MINUS exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("-"), $1) , $3); }
-        |   exp DIV exp         { $$ = new FunctionCall( new FunctionCall(new Identifier("/"), $1) , $3); }
-        |   exp MULT exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("*"), $1) , $3); }
-        |   exp EQUALS exp      { $$ = new FunctionCall( new FunctionCall(new Identifier("="), $1) , $3); }
+        |   exp '+' exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("+"), $1) , $3); }
+        |   exp '-' exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("-"), $1) , $3); }
+        |   exp '/' exp         { $$ = new FunctionCall( new FunctionCall(new Identifier("/"), $1) , $3); }
+        |   exp '*' exp	{ $$ = new FunctionCall( new FunctionCall(new Identifier("*"), $1) , $3); }
+        |   exp '=' exp      { $$ = new FunctionCall( new FunctionCall(new Identifier("="), $1) , $3); }
         |   exp exp   %prec FUNAPPLY    { $$ = new FunctionCall($1, $2); }
         |   let_statement IN exp   { $$ = new LetIn($1, $3); }
         |   IF exp THEN exp ELSE exp    { $$ = new Conditional($2, $4, $6); }
@@ -149,7 +156,21 @@ exp:        pattern             { $$ = $1; }
         |   '(' exp ')'   { $$ = $2; }
         ;
 
-let_statement:  LET RECS pattern EQUALS exp  { $$ = new Let($3, $5, $2); }
+tuple:  '(' comma_separated_expressions ')'     { $$ = new TupleCreation($2); }
+     ;
+
+comma_separated_expressions:    exp ',' exp     { $$ = new vector<Expression*>{$1, $3}; }
+                           |    comma_separated_expressions ',' exp     { $$ = $1; $$->push_back($3); }
+                           ;
+
+tuple_type:     asterisk_separated_types    { $$ = new Type(COMPLEX, to_string($1->size()) + "tuple", *$1); delete $1; }
+          ;
+
+asterisk_separated_types:   type '*' type       { $$ = new vector<Type>{*$1, *$3}; delete $1; delete $3; }
+                        |   asterisk_separated_types '*' type   { $$ = $1; $1->push_back(*$3); delete $3; }
+                        ;
+
+let_statement:  LET RECS pattern '=' exp  { $$ = new Let($3, $5, $2); }
              ;
 
 RECS:   /* empty */ { $$ = false; }
@@ -163,6 +184,7 @@ pattern:    INTEGER_LITERAL	{ $$ = new Integer($1); }
         |   IDENTIFIER          { $$ = new Identifier( *$1 ); }
         |   pattern pattern   %prec FUNAPPLY    { $$ = new FunctionCall($1, $2); }
         |   '(' pattern ')'   { $$ = $2; }
+        |   tuple               {  }
         ;
 
 %%

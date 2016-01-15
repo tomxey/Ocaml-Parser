@@ -19,6 +19,8 @@ void ParseEssentials::parseNewStatements()
 
 void ParseEssentials::parseStatement(Statement *statement)
 {
+    ParseEssentials::toplevel_environment.printNewValues(); // for the first time, print system functions
+
     std::cout << getColorCode(GREEN_CODE, true, true) << "---------Parsing Statement-------------" << getColorCode(RESET_CODE) << std::endl;
     int statement_good = true;
     Environment environment_backup = ParseEssentials::toplevel_environment;
@@ -46,6 +48,7 @@ void ParseEssentials::parseStatement(Statement *statement)
             else{
                 std::cout << "Some statement, no value to print..." << std::endl;
             }
+            ParseEssentials::toplevel_environment.printNewValues();
         }
         catch(std::runtime_error ex){
             std::cout << getColorCode(RED_CODE, true, true) << "Error during execution: " << ex.what() << std::endl;

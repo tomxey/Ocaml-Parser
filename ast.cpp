@@ -55,7 +55,7 @@ bool Value::equals(Value *other)
         }
         else throw std::runtime_error("comparing unknown Value Classes!");
     }
-    else return false;
+    else throw std::runtime_error("comparing values of different Classes");
 }
 
 bool Value::matchWithValue(Value *other)
@@ -94,3 +94,13 @@ void Value::applyMatch(Value *other, Environment &env)
         }
     }
 } // match with value
+
+
+Value *TupleCreation::execute(Environment &env)
+{
+    ComplexValue* return_val = new ComplexValue(exp_type, std::to_string(tuple_elements->size()) + "Tuple");
+    for(unsigned int i = 0; i < tuple_elements->size(); ++i){
+        return_val->aggregatedValues.push_back( tuple_elements->operator [](i)->execute(env) );
+    }
+    return return_val;
+}

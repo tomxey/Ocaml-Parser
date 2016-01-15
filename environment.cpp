@@ -62,7 +62,7 @@ Type Environment::getIdentifierType(Identifier identifier)
     if(variables.find(identifier) != variables.end()){
         return renumeratedToUnique( followRelations(variables[identifier].back()->exp_type) );
     }
-    throw std::runtime_error("identifier not found");
+    throw std::runtime_error("identifier "+ identifier.name +" not found");
 }
 
 Type Environment::getNewPolymorphicType()
@@ -93,6 +93,21 @@ Value *Environment::getValue(Identifier identifier)
 bool Environment::valueExists(Identifier identifier)
 {
     return variables.find(identifier) != variables.end();
+}
+
+void Environment::printNewValues()
+{
+    auto iter = identifiers_stack.end();
+    while(displayed_values < identifiers_stack.size()){
+        --iter;
+        ++displayed_values;
+    }
+
+    while(iter != identifiers_stack.end()){
+        Identifier identifier = *(iter++);
+        std::cout << identifier.name << ": " << renumeratedToSmallest(variables[identifier].back()->exp_type) << " = " << variables[identifier].back()->print(0);
+        std::cout.flush();
+    }
 }
 
 Type Environment::addType(TypeDefAST *type_def)
@@ -169,6 +184,20 @@ Type Environment::addType(TypeDefAST *type_def)
 Type Environment::getType(Identifier identifier)
 {
     if(type_constructors.find(identifier) != type_constructors.end()) return renumeratedToUnique(type_constructors[identifier]);
+    else if(std::isdigit(identifier.name[0])){ // only tuples have digit as first character
+        std::stringstream ss(identifier.name);
+        int tuple_size;
+        std::string tuple_name;
+        ss >> tuple_size >> tuple_name;
+        if(tuple_name != "tuple") throw std::runtime_error("strange tuple name: " + tuple_name);
+        else{
+            Type tuple_type(COMPLEX, identifier.name);
+            for(unsigned int i = 0; i < tuple_size; ++i){
+                tuple_type.type_parameters.push_back( Type(POLYMORPHIC, "\'" + std::to_string(i)) );
+            }
+            return tuple_type;
+        }
+    }
     else throw std::runtime_error("type " + identifier.name + " doesn't exist");
 }
 
