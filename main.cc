@@ -35,9 +35,8 @@ int main(int argc, char **argv)
     DEFINE_CURRIED_FUNCTION("==",a, b, return new Bool(a==b);, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
     DEFINE_CURRIED_FUNCTION("!=",a, b, return new Bool(a!=b);, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'a"), Type(PRIMITIVE, "bool"));
 
-    DEFINE_CURRIED_FUNCTION("Pair",a, b, return new ComplexValue(Type(COMPLEX, "pair",std::vector<Type>{a->exp_type, b->exp_type}), "Pair",std::vector<Value*>{a, b});, Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b"), Type(COMPLEX, "pair",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}));
-    ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "pair",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));
-    ParseEssentials::toplevel_environment.addValue(Identifier("snd"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[1];}, Type(COMPLEX, "pair",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'b") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "2tuple",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("snd"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[1];}, Type(COMPLEX, "2tuple",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'b") ));
 
     ParseEssentials::toplevel_environment.addValue(Identifier("exit"), new BuiltIn_Function([](Value* arg)->Value* { exit( ((Integer*)arg)->value );}, Type(PRIMITIVE, "int"), Type(POLYMORPHIC, "'a") ));
 

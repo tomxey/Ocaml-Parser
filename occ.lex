@@ -9,25 +9,25 @@ extern int yylineno;
 #define YY_DECL extern "C" int yylex (void)
 %}
 
+comment         \(\*[^\*]*\*\)
+
 digit		[0-9]
 int_const	{digit}+
-float_const {int_const}\.{int_const}*
+float_const     {int_const}\.{int_const}*
 
-small_letter      [a-z_]
-big_letter        [A-Z]
-any_letter        [a-z_A-Z]
-ident             {small_letter}+{any_letter}*
-string_const      \"{any_letter}*\"
-value_constructor {big_letter}{any_letter}*
-polymorphic_type  '{small_letter}+
+ident             [a-z_][a-zA-Z0-9_]*
+string_const      \"[^\"]*\"
+value_constructor [A-Z][a-zA-Z0-9_]*
+polymorphic_type  '[a-z]+
+
+infix_op        [\=\<\>\@\^\|\&\+\-\*\/\$\%]+
+prefix_op       [\!\?\~]+
 
 %%
 
-{int_const}		{ yylval.int_val = atoi(yytext); return INTEGER_LITERAL; }
-{string_const}          { yylval.string_val = new std::string(yytext); return STRING_LITERAL; }
-{float_const}           { yylval.float_val = atof(yytext); return FLOAT_LITERAL; }
-{value_constructor}     { yylval.string_val = new std::string(yytext); return VALUE_CONSTRUCTOR; }
-{polymorphic_type}      { yylval.string_val = new std::string(yytext); return POLYMORPHIC_TYPE; }
+{comment}       { }
+"true"           { yylval.bool_val = true; return BOOLEAN_LITERAL; }
+"false"           { yylval.bool_val = false; return BOOLEAN_LITERAL; }
 "let"           { yylval.string_val = new std::string(yytext); return LET; }
 "rec"		{ yylval.string_val = new std::string(yytext); return REC; }
 "in"            { yylval.string_val = new std::string(yytext); return IN; }
@@ -38,9 +38,21 @@ polymorphic_type  '{small_letter}+
 "else"            { yylval.string_val = new std::string(yytext); return ELSE; }
 "type"            { yylval.string_val = new std::string(yytext); return TYPE; }
 "of"            { yylval.string_val = new std::string(yytext); return OF; }
+"match"            { yylval.string_val = new std::string(yytext); return MATCH; }
+"with"            { yylval.string_val = new std::string(yytext); return WITH; }
 ";;"            { yylval.string_val = new std::string(yytext); return SEMIC2; }
-[\(\)\{\}:;,\|\+\-\*/=]   { return yytext[0]; }
+
 {ident}         { yylval.string_val = new std::string(yytext); return IDENTIFIER; }
+
+[-]?{int_const}		{ yylval.int_val = atoi(yytext); return INTEGER_LITERAL; }
+{string_const}          { yylval.string_val = new std::string(yytext); return STRING_LITERAL; }
+[-]?{float_const}           { yylval.float_val = atof(yytext); return FLOAT_LITERAL; }
+{value_constructor}     { yylval.string_val = new std::string(yytext); return VALUE_CONSTRUCTOR; }
+{polymorphic_type}      { yylval.string_val = new std::string(yytext); return POLYMORPHIC_TYPE; }
+
+[\(\)\{\}:;,\|\+\-\*/=]   { return yytext[0]; }
+{infix_op}              { yylval.string_val = new std::string(yytext); return INFIX_OP; }
+{prefix_op}             { yylval.string_val = new std::string(yytext); return PREFIX_OP; }
 
 [ \t]*		{}
 [\n]		{ yylineno++;}

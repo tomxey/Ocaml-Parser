@@ -369,7 +369,82 @@ public:
 };
 
 class MatchWith : public Expression{
+public:
+    MatchWith(Expression* matched_expression, std::vector< std::pair<Expression*, Expression*> > patterns_and_cases_expressions)
+        :matched_expression(matched_expression), patterns_and_cases_expressions(patterns_and_cases_expressions){ patterns_values.resize(patterns_and_cases_expressions.size()); }
 
+    Expression* matched_expression;
+    std::vector< std::pair<Expression*, Expression*> > patterns_and_cases_expressions;
+    std::vector<Value*>      patterns_values;
+
+    virtual std::string print(int indents) override {
+        std::string result = std::string(indents, ' ') + std::string("Match ") + matched_expression->print(0) + " with:";
+        for(auto pat_cas : patterns_and_cases_expressions){
+            result += pat_cas.first->print(indents + 1) + "   --> " + pat_cas.second->print(indents + 1);
+        }
+        return result;
+    }
+    virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
+        Expression::deduceType(env, mostGeneralExpected);
+        if(matched_expression->exp_type.type_enum == UNDETERMINED) matched_expression->exp_type = env.getNewPolymorphicType();
+        matched_expression->deduceType(env, matched_expression->exp_type);
+        int i = 0;
+        for(auto pat_cas : patterns_and_cases_expressions){
+            Expression* pattern = pat_cas.first;
+            Expression* in_case = pat_cas.second;
+            if(pattern->exp_type.type_enum == UNDETERMINED) pattern->exp_type = env.getNewPolymorphicType();
+            if(in_case->exp_type.type_enum == UNDETERMINED) in_case->exp_type = env.getNewPolymorphicType();
+            env.addRelation(pattern->exp_type, matched_expression->exp_type); // all patterns have to be of the same type as matched expression
+            env.addRelation(in_case->exp_type, this->exp_type); // all cases have to have the same type as the whole match
+
+            std::set<std::string> pattern_parameters;
+            pattern->isValidPattern(pattern_parameters);
+
+            env.addActivationFrame();
+            for(std::string param : pattern_parameters){
+                env.addIdentifierToBeTypeDeduced(Identifier(param), false, env.getNewPolymorphicType());
+            }
+            pattern->deduceType(env, pattern->exp_type);
+
+            env.execution_inside_pattern = true;
+            patterns_values[i++] = pattern->execute(env);
+            env.execution_inside_pattern = false;
+
+            in_case->deduceType(env, in_case->exp_type);
+
+            env.removeActivationFrame();
+        } // for every pattern expression pair
+
+        return exp_type = env.followRelations(exp_type);
+    }
+
+    virtual Value* execute(Environment& env) override {
+        env.addActivationFrame();
+
+        Value* expression_result = matched_expression->execute(env);
+        Expression* choosen_case = nullptr;
+        Value* choosen_pattern_value = nullptr;
+        int i = 0;
+        bool matched = false;
+        for(auto pat_cas : patterns_and_cases_expressions){
+            Value* pattern_value = patterns_values[i++];
+            Expression* in_case = pat_cas.second;
+            if(pattern_value->matchWithValue(expression_result)){
+                choosen_pattern_value = pattern_value;
+                matched = true;
+                choosen_case  = in_case;
+                break;
+            }
+        } // for each pattern and case
+
+        if(matched){
+            choosen_pattern_value->applyMatch(expression_result, env);
+            Value* return_val = choosen_case->execute(env);
+            env.removeActivationFrame();
+            return return_val;
+        }
+        else throw std::runtime_error("Failed to match!");
+    } // execute
 };
 
 class Function : public Value{
@@ -507,7 +582,7 @@ public:
 
     bool value;
 
-    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Bool: ") + std::to_string(value) + "\n";}
+    virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Bool: ") + (value?"true":"false") + "\n";}
 };
 
 class String : public Primitive{

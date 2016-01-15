@@ -37,7 +37,7 @@ bison.o:	bison.c
 		$(GPP) $(CFLAGS) -c bison.c -o bison.o
 
 bison.c:	occ.y
-		bison -d -v occ.y
+		bison -d -v --report=itemset --report=lookahead occ.y
 		cp occ.tab.c bison.c
 		cmp -s occ.tab.h tok.h || cp occ.tab.h tok.h
 
