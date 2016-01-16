@@ -23,7 +23,9 @@ public:
 
     void addIdentifierToBeTypeDeduced(Identifier identifier, bool rec = false, Type startingType = Type());
     void setIdentifierType(Identifier identifier, Type newType);
+    void resetIdentifierType(Identifier identifier, Type newType);
     Type getIdentifierType(Identifier identifier);
+
 
     Type getNewPolymorphicType();
     void reset_polymorphic_types();

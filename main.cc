@@ -24,6 +24,14 @@ TODO:
 
 int main(int argc, char **argv)
 {
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("int"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("bool"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("float"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("string"));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("list", std::vector<std::string>{"'a"}, std::vector<std::pair<std::string, Type> >{
+                                                                     std::pair<std::string, Type>("End", Type()),
+                                                                     std::pair<std::string, Type>("Elem", Type(COMPLEX, "2tuple", std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(COMPLEX, "list", std::vector<Type>{Type(POLYMORPHIC, "'a")})})) } ));;
+
     //ParseEssentials::toplevel_environment.addValue(Identifier("print_int"), new BuiltIn_Function([](Value* arg)->Value* {std::cout << ((Integer*)arg)->value << std::endl; return arg;}, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int") ));
     DEFINE_CURRIED_FUNCTION("+",a, b, return new Integer(((Integer*)a)->value + ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
     DEFINE_CURRIED_FUNCTION("-",a, b, return new Integer(((Integer*)a)->value - ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
@@ -46,17 +54,15 @@ int main(int argc, char **argv)
     DEFINE_CURRIED_FUNCTION("||",a, b, return new Bool(((Bool*)a)->value || ((Bool*)b)->value);, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"));
     DEFINE_CURRIED_FUNCTION("&&",a, b, return new Bool(((Bool*)a)->value && ((Bool*)b)->value);, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"));
 
+    ParseEssentials::toplevel_environment.addValue(Identifier("hd"), new BuiltIn_Function([](Value* arg)->Value* {if(((ComplexValue*)arg)->aggregatedValues.size() == 0) throw std::runtime_error("hd(End)"); return ((ComplexValue*)(((ComplexValue*)arg)->aggregatedValues[0]))->aggregatedValues[0];}, Type(COMPLEX, "list",std::vector<Type>{Type(POLYMORPHIC, "'a")}), Type(POLYMORPHIC, "'a") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("tl"), new BuiltIn_Function([](Value* arg)->Value* {if(((ComplexValue*)arg)->aggregatedValues.size() == 0) throw std::runtime_error("tl(End)"); return ((ComplexValue*)(((ComplexValue*)arg)->aggregatedValues[0]))->aggregatedValues[1];}, Type(COMPLEX, "list",std::vector<Type>{Type(POLYMORPHIC, "'a")}), Type(COMPLEX, "list",std::vector<Type>{Type(POLYMORPHIC, "'a")}) ));
+
     ParseEssentials::toplevel_environment.addValue(Identifier("fst"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[0];}, Type(COMPLEX, "2tuple",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'a") ));
     ParseEssentials::toplevel_environment.addValue(Identifier("snd"), new BuiltIn_Function([](Value* arg)->Value* {return ((ComplexValue*)arg)->aggregatedValues[1];}, Type(COMPLEX, "2tuple",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), Type(POLYMORPHIC, "'b") ));
     ParseEssentials::toplevel_environment.addValue(Identifier("exit"), new BuiltIn_Function([](Value* arg)->Value* { exit( ((Integer*)arg)->value );}, Type(PRIMITIVE, "int"), Type(POLYMORPHIC, "'a") ));
     ParseEssentials::toplevel_environment.addValue(Identifier("not"), new BuiltIn_Function([](Value* arg)->Value* {return new Bool(!(((Bool*)arg)->value));}, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool") ));
 
-    /// primitive types definitions
-
-    ParseEssentials::toplevel_environment.addType(new TypeDefAST("int"));;
-    ParseEssentials::toplevel_environment.addType(new TypeDefAST("bool"));;
-    ParseEssentials::toplevel_environment.addType(new TypeDefAST("float"));;
-    ParseEssentials::toplevel_environment.addType(new TypeDefAST("string"));;
+    ParseEssentials::toplevel_environment.addValue(Identifier("failwith"), new BuiltIn_Function([](Value* arg)->Value* {throw std::runtime_error(((String*)arg)->value);}, Type(PRIMITIVE, "string"), Type(POLYMORPHIC, "'a") ));
 
   if ((argc > 1) && (freopen(argv[1], "r", stdin) == NULL))
   {

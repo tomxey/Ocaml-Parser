@@ -43,7 +43,9 @@ void ParseEssentials::parseStatement(Statement *statement)
         try{
             Value* retVal = statement->execute(ParseEssentials::toplevel_environment);
             if(retVal != nullptr){
-                std::cout << retVal->print(1) << std::endl;
+                //std::cout << retVal->printValue() << std::endl;
+                ParseEssentials::toplevel_environment.addValue(Identifier("-"), retVal);
+                ParseEssentials::toplevel_environment.resetIdentifierType(Identifier("-"), type);
             }
             else{
                 std::cout << "Some statement, no value to print..." << std::endl;
@@ -59,7 +61,7 @@ void ParseEssentials::parseStatement(Statement *statement)
         std::cout << getColorCode(YELLOW_CODE, true, true) << "Statement not proper. Skipping..." << std::endl;
     }
 
-    ParseEssentials::toplevel_environment.cleanupAfterStatement();
+    //ParseEssentials::toplevel_environment.cleanupAfterStatement();
     std::cout << getColorCode(WHITE_CODE, true, true) << "--------Statement Parsing Done---------" << getColorCode(RESET_CODE) << std::endl;
 } // parseStatement
 

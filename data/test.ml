@@ -26,6 +26,8 @@ type 'a list = End | Elem of 'a * 'a list;;
 type 'a list = End | Elem of 'a * ('a list);;
 match Elem(1,End) with End -> End | Elem(x,xs) -> xs;;
 
+let rec naturals = function a -> function b -> if a >= b then End else Elem(a, naturals (a+1) b);;
+
 let primes = function to_n ->
 let rec sieve = function n ->
 if n <= to_n

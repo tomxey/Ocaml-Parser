@@ -80,6 +80,7 @@ class Value : public Expression{
 public:
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Somevalue\n");}
+    virtual std::string printValue(){ return std::string("Somevalue"); }
 
     /*virtual std::string print_with_type_forced(Type type, int indents = 0){
         if(exp_type != type) throw std::runtime_error("forcing incompatible type. " + exp_type.to_string() + " != " + type.to_string());
@@ -111,6 +112,7 @@ public:
     std::string name;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("UnboundPatternVariable: ") + name + "\n";}
+    virtual std::string printValue() override { return name; }
 
     virtual Type deduceType(Environment&, Type) override {
         throw std::runtime_error("deduceType() function shoudn't be called for UnboundPatternVariable");
@@ -134,6 +136,7 @@ public:
     std::string name;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Identifier: ") + name + "\n";}
+    virtual std::string printValue() override { return name; }
 
     virtual Type deduceType(Environment& env, Type mostGeneralExpected) override {
         if(name == "_"){
@@ -301,10 +304,12 @@ public:
 
 class FunctionCall : public Expression{
 public:
-    FunctionCall(Expression* function_expression, Expression* argument_expression): function_expression(function_expression), argument_expression(argument_expression) {}
+    FunctionCall(Expression* function_expression, Expression* argument_expression): function_expression(function_expression), argument_expression(argument_expression)
+    {isValueConstructorCall = function_expression->isIdentifier() && std::isupper(((Identifier*)function_expression)->name[0]); }
 
     Expression* function_expression;
     Expression* argument_expression;
+    bool isValueConstructorCall;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Function Call: \n") + function_expression->print(indents+1) + argument_expression->print(indents+1);}
 
@@ -325,6 +330,7 @@ public:
     virtual Value* execute(Environment& env) override {
         Value* function_val = function_expression->execute(env);
         Value* return_val = function_val->call(env, argument_expression->execute(env));;
+        //if(isValueConstructorCall) return_val->exp_type = this->exp_type; // value constructors don't have time to determine return types inside
         return return_val;
     }
 
@@ -477,6 +483,7 @@ public:
     }
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Function: \n") + arg_name->print(indents+1) + function_expression->print(indents+1);}
+    virtual std::string printValue() override { return exp_type.type_name; }
 
     virtual Type deduceType(Environment &env, Type mostGeneralExpected) override {
         env.addActivationFrame();
@@ -515,6 +522,7 @@ public:
     std::function<Value*(Value*)> fun;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("BuiltIn Function\n");}
+    virtual std::string printValue() override { return exp_type.type_name; }
 
     virtual Value* call(Environment& env, Value* argument) override {
         return fun.operator()(argument);
@@ -542,6 +550,17 @@ public:
         std::stringstream ss;
         ss << std::string(indents, ' ') << constructor_name << "(";
         for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->print(indents + 1);
+        ss << ")\n";
+        return ss.str();
+    }
+
+    virtual std::string printValue() override {
+        std::stringstream ss;
+        if(std::isdigit(constructor_name[0]) == false ){ // if not displaying tuple type
+            ss << constructor_name;
+        }
+        ss << "(";
+        for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->printValue() << (i==aggregatedValues.size()-1?"":", ");
         ss << ")";
         return ss.str();
     }
@@ -572,6 +591,7 @@ public:
     int value;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Integer: ") + std::to_string(value) + "\n";}
+    virtual std::string printValue() override { return std::to_string(value); }
 
     virtual int getValueClassID() override{return PRIMITIVE_CLASS_ID;}
 };
@@ -583,6 +603,7 @@ public:
     float value;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Float: ") + std::to_string(value) + "\n";}
+    virtual std::string printValue() override { return std::to_string(value); }
 };
 
 class Bool : public Primitive{
@@ -592,6 +613,7 @@ public:
     bool value;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Bool: ") + (value?"true":"false") + "\n";}
+    virtual std::string printValue() override { return std::string(value?"true":"false"); }
 };
 
 class String : public Primitive{
@@ -601,6 +623,7 @@ public:
     std::string value;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("String: \"") + value + "\"\n";}
+    virtual std::string printValue() override { return std::string("\"") + value + std::string("\""); }
 };
 
 #endif // AST_H

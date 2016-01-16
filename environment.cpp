@@ -44,9 +44,17 @@ void Environment::setIdentifierType(Identifier identifier, Type newType)
         std::pair<Identifier, Type> found = *iter;
         addRelation(iter->second, newType);
     }
+}
+
+void Environment::resetIdentifierType(Identifier identifier, Type newType)
+{
+    std::list< std::pair<Identifier, Type> >::reverse_iterator iter;
+    for(iter = identifier_types.rbegin(); iter != identifier_types.rend() && iter->first.name != identifier.name; ++iter);
+    if(iter != identifier_types.rend()){
+        iter->second = newType;
+    }
     else{
-        // it is not considered an arror anymore
-        //throw std::runtime_error("identifier not found");
+        identifier_types.push_back(std::make_pair(identifier, newType));
     }
 }
 
@@ -103,10 +111,11 @@ void Environment::printNewValues()
         ++displayed_values;
     }
 
+    //variables[identifier].back()->exp_type
+
     while(iter != identifiers_stack.end()){
         Identifier identifier = *(iter++);
-        std::cout << identifier.name << ": " << renumeratedToSmallest(variables[identifier].back()->exp_type) << " = " << variables[identifier].back()->print(0);
-        std::cout.flush();
+        std::cout << identifier.name << ": " << renumeratedToSmallest(getIdentifierType(identifier)) << " = " << variables[identifier].back()->printValue() << std::endl;
     }
 }
 
@@ -195,7 +204,7 @@ Type Environment::getType(Identifier identifier)
             for(unsigned int i = 0; i < tuple_size; ++i){
                 tuple_type.type_parameters.push_back( Type(POLYMORPHIC, "\'" + std::to_string(i)) );
             }
-            return tuple_type;
+            return renumeratedToUnique(tuple_type);
         }
     }
     else throw std::runtime_error("type " + identifier.name + " doesn't exist");

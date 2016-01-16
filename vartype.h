@@ -24,7 +24,7 @@ public:
 
     Type(TypeEnum type_enum = UNDETERMINED, std::string type_name = "", std::vector<Type> type_parameters = std::vector<Type>())
         : type_enum(type_enum), type_name(type_name), type_parameters(type_parameters)
-    { if(type_enum == FUNCTION_TYPE) type_name = "<fun>"; }
+    { if(type_enum == FUNCTION_TYPE) this->type_name = "<fun>"; }
 
     //Type withExpected(Type expected_type);
     //Type getMoreGeneral(Type other_type);
