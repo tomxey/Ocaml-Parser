@@ -77,12 +77,7 @@ extern "C" FILE *yyin;
 
 %right  MATCH WITH
 
-%left '('
-%left ')'
-
 %right	LET REC IN
-
-%left IDENTIFIER INTEGER_LITERAL STRING_LITERAL FLOAT_LITERAL VALUE_CONSTRUCTOR POLYMORPHIC_TYPE BOOLEAN_LITERAL
 
 %right	IF
 %right	THEN ELSE
@@ -93,9 +88,12 @@ extern "C" FILE *yyin;
 %left	'+' '-'
 %left	'*' '/'
 
-%left   '|' ','
+%right   '|' ','
+
+%left IDENTIFIER INTEGER_LITERAL STRING_LITERAL FLOAT_LITERAL VALUE_CONSTRUCTOR POLYMORPHIC_TYPE BOOLEAN_LITERAL
 
 %right PREFIX_OP
+%left '(' ')'
 %left FUNAPPLY
 %left SEMIC2
 

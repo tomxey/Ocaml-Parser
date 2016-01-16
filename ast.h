@@ -355,9 +355,10 @@ public:
         Expression::deduceType(env, mostGeneralExpected);
         Type tuple_type(COMPLEX, std::to_string(tuple_elements->size()) + "tuple" );
 
+        tuple_type.type_parameters.resize(tuple_elements->size());
         for(unsigned int i = 0; i < tuple_elements->size(); ++i){
-            tuple_type.type_parameters.push_back(env.getNewPolymorphicType());
-            tuple_elements->operator [](i)->deduceType(env, tuple_type.type_parameters.back());
+            tuple_type.type_parameters[i] = env.getNewPolymorphicType();
+            tuple_elements->operator [](i)->deduceType(env, tuple_type.type_parameters[i]);
         }
 
         env.addRelation(exp_type, tuple_type);
