@@ -36,3 +36,14 @@ else []
 and find_primes = function l ->
 match l with h::t -> h:: find_primes(List.filter(fun x -> x mod h <> 0) t)
 | [] -> [] in find_primes(sieve 2);;
+
+let rec sil = function n -> match n with 0 -> 1 | n ->  n * sil (n - 1);;
+
+let sin = function a ->
+let rec fh = function i ->
+if i > 10 then 0.0
+else (a ** float_of_int i) /. float_of_int (sil i) -. ((a ** float_of_int (i+2)) /. float_of_int (sil (i+2))) +. fh (i+4)
+in fh 1;;
+
+let rec gen_list = function a -> function b -> function f -> if a >= b then [] else (f a)::(gen_list (a+1) b f);;
+gen_list 0 91 (function i -> sin ((float_of_int i) *. 3.14 /. 90.));;

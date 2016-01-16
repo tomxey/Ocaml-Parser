@@ -53,7 +53,8 @@ prefix_op       [\!\?\~]+
 
 \([ ]*{operator}*[ ]*\)           { const char *begin, *end; begin = yytext + 1; while( *begin == ' ' ) begin++; end = begin; while( *end != ' ' && *end != ')' ) end++;
                                         yylval.string_val = new std::string(begin, end - begin); return IDENTIFIER;}
-[\(\)\{\}:;,\|\+\-\*/=]   { return yytext[0]; }
+"::"                        { yylval.string_val = new std::string(yytext); return LIST_CONS; }
+[\(\)\{\}:;,\|\+\-\*/=\[\]]   { return yytext[0]; }
 {infix_op}{operator}*     { yylval.string_val = new std::string(yytext); return INFIX_OP; }
 {prefix_op}{operator}*    { yylval.string_val = new std::string(yytext); return PREFIX_OP; }
 

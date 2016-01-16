@@ -143,3 +143,24 @@ Value *TupleCreation::execute(Environment &env)
     }
     return return_val;
 }
+
+
+Value *Let::execute(Environment &env)
+{
+    if(recursive){
+        if(expression->isNonBuiltInFunction() && pattern->isIdentifier()){
+            Function* function_copy = new Function(*(Function*)expression);
+            env.addValue(*(Identifier*)pattern, static_cast<Value*>(function_copy));
+            function_copy->env_copy = env;
+            // im not executing function_copy as it will return another copy
+            return nullptr;
+        }
+        else throw std::runtime_error("rec keyword can only be used to declare functions");
+    }
+    else{
+        Value* expression_result = expression->execute(env);
+        if(pattern_value->matchWithValue(expression_result)) pattern_value->applyMatch(expression_result, env);
+        else throw std::runtime_error("Failed to match!");
+        return nullptr;
+    }
+} // Let::execute

@@ -23,6 +23,8 @@
 #define COMPLEX_VALUE_CLASS_ID 4
 #define PRIMITIVE_CLASS_ID 5
 
+#define LIST_LINE_BREAK 10
+
 class Environment;
 class Value;
 
@@ -74,6 +76,7 @@ public:
     virtual bool isValue() { return false; }
     virtual bool isValidPattern(std::set<std::string>& ) { throw std::runtime_error("forbidden syntax element inside of pattern"); }
     virtual bool isIdentifier(){return false;}
+    virtual bool isNonBuiltInFunction(){return false; }
 };
 
 class Value : public Expression{
@@ -228,22 +231,7 @@ public:
         return env.followRelations(pattern->exp_type);
     }
 
-    virtual Value* execute(Environment& env) override {
-        if(recursive){
-            if(expression->isValue() && pattern->isIdentifier()){
-                env.addValue(*(Identifier*)pattern, static_cast<Value*>(expression));
-                expression->execute(env);
-                return nullptr;
-            }
-            else throw std::runtime_error("using rec keyword on non value or using rec on non identifier");
-        }
-        else{
-            Value* expression_result = expression->execute(env);
-            if(pattern_value->matchWithValue(expression_result)) pattern_value->applyMatch(expression_result, env);
-            else throw std::runtime_error("Failed to match!");
-            return nullptr;
-        }
-    } // execute
+    virtual Value* execute(Environment& env) override;
 };
 
 class LetIn : public Expression{
@@ -464,12 +452,11 @@ public:
 
 class Function : public Value{
 public:
-    Function(Identifier* arg_name, Expression* function_expression):arg_name(arg_name), function_expression(function_expression), env_initialized(false)
+    Function(Identifier* arg_name, Expression* function_expression):arg_name(arg_name), function_expression(function_expression)
     {} // constructor
 
     Identifier* arg_name;
     Expression* function_expression;
-    bool env_initialized;
     Environment env_copy;
     //bool currently_being_called;
 
@@ -500,19 +487,13 @@ public:
     }
 
     virtual Value* execute(Environment& env) override {
-        if(env_initialized){ // for the second and further times, we have to return a copy
-            Function* function_copy = new Function(*this);
-            function_copy->env_copy = env;
-            return function_copy;
-        }
-        else{ // for the first time, we can return ourselves
-            this->env_copy = env;
-            env_initialized = true;
-            return this;
-        }
+        Function* function_copy = new Function(*this);
+        function_copy->env_copy = env;
+        return function_copy;
     }
 
     virtual int getValueClassID() override{return FUNCTION_CLASS_ID;}
+    virtual bool isNonBuiltInFunction() override { return true; }
 };
 
 
@@ -556,12 +537,25 @@ public:
 
     virtual std::string printValue() override {
         std::stringstream ss;
-        if(std::isdigit(constructor_name[0]) == false ){ // if not displaying tuple type
-            ss << constructor_name;
+        if(exp_type.type_name == "list"){
+            ComplexValue* current = this;
+            int i = 0;
+            ss << "[";
+            while(current->constructor_name == "Elem"){
+                ss << ((ComplexValue*)current->aggregatedValues[0])->aggregatedValues[0]->printValue();
+                current = (ComplexValue*)((ComplexValue*)current->aggregatedValues[0])->aggregatedValues[1];
+                if(current->constructor_name == "Elem") ss << ";" << ((++i)%LIST_LINE_BREAK==0?"\n":"");
+            }
+            ss << "]";
         }
-        ss << "(";
-        for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->printValue() << (i==aggregatedValues.size()-1?"":", ");
-        ss << ")";
+        else{
+            if(std::isdigit(constructor_name[0]) == false ){ // if not displaying tuple type
+                ss << constructor_name;
+            }
+            ss << "(";
+            for(unsigned int i=0; i<aggregatedValues.size(); ++i) ss << aggregatedValues[i]->printValue() << (i==aggregatedValues.size()-1?"":", ");
+            ss << ")";
+        }
         return ss.str();
     }
 
@@ -598,9 +592,9 @@ public:
 
 class Float : public Primitive{
 public:
-    Float(float value): value(value){exp_type = Type(PRIMITIVE, "float");}
+    Float(double value): value(value){exp_type = Type(PRIMITIVE, "float");}
 
-    float value;
+    double value;
 
     virtual std::string print(int indents) override {return std::string(indents, ' ') + std::string("Float: ") + std::to_string(value) + "\n";}
     virtual std::string printValue() override { return std::to_string(value); }

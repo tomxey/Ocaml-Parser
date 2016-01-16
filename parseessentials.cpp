@@ -44,8 +44,8 @@ void ParseEssentials::parseStatement(Statement *statement)
             Value* retVal = statement->execute(ParseEssentials::toplevel_environment);
             if(retVal != nullptr){
                 //std::cout << retVal->printValue() << std::endl;
-                ParseEssentials::toplevel_environment.addValue(Identifier("-"), retVal);
-                ParseEssentials::toplevel_environment.resetIdentifierType(Identifier("-"), type);
+                ParseEssentials::toplevel_environment.addValue(Identifier("<_>"), retVal);
+                ParseEssentials::toplevel_environment.resetIdentifierType(Identifier("<_>"), type);
             }
             else{
                 std::cout << "Some statement, no value to print..." << std::endl;

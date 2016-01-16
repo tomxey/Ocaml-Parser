@@ -50,9 +50,15 @@ int main(int argc, char **argv)
     DEFINE_CURRIED_FUNCTION("-.",a, b, return new Float(((Float*)a)->value - ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
     DEFINE_CURRIED_FUNCTION("*.",a, b, return new Float(((Float*)a)->value * ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
     DEFINE_CURRIED_FUNCTION("/.",a, b, return new Float(((Float*)a)->value / ((Float*)b)->value);, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
+    DEFINE_CURRIED_FUNCTION("**",a, b, return new Float( std::pow(((Float*)a)->value , ((Float*)b)->value));, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float"));
     DEFINE_CURRIED_FUNCTION("^",a, b, return new String(((String*)a)->value + ((String*)b)->value);, Type(PRIMITIVE, "string"), Type(PRIMITIVE, "string"), Type(PRIMITIVE, "string"));
     DEFINE_CURRIED_FUNCTION("||",a, b, return new Bool(((Bool*)a)->value || ((Bool*)b)->value);, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"));
     DEFINE_CURRIED_FUNCTION("&&",a, b, return new Bool(((Bool*)a)->value && ((Bool*)b)->value);, Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"), Type(PRIMITIVE, "bool"));
+
+    ParseEssentials::toplevel_environment.addValue(Identifier("float_of_int"), new BuiltIn_Function([](Value* arg)->Value* {return new Float(((Integer*)arg)->value);}, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "float") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("int_of_float"), new BuiltIn_Function([](Value* arg)->Value* {return new Integer(((Float*)arg)->value);}, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "int") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("floor"), new BuiltIn_Function([](Value* arg)->Value* {return new Float(std::floor(((Float*)arg)->value));}, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float") ));
+    ParseEssentials::toplevel_environment.addValue(Identifier("ceil"), new BuiltIn_Function([](Value* arg)->Value* {return new Float(std::ceil(((Float*)arg)->value));}, Type(PRIMITIVE, "float"), Type(PRIMITIVE, "float") ));
 
     ParseEssentials::toplevel_environment.addValue(Identifier("hd"), new BuiltIn_Function([](Value* arg)->Value* {if(((ComplexValue*)arg)->aggregatedValues.size() == 0) throw std::runtime_error("hd(End)"); return ((ComplexValue*)(((ComplexValue*)arg)->aggregatedValues[0]))->aggregatedValues[0];}, Type(COMPLEX, "list",std::vector<Type>{Type(POLYMORPHIC, "'a")}), Type(POLYMORPHIC, "'a") ));
     ParseEssentials::toplevel_environment.addValue(Identifier("tl"), new BuiltIn_Function([](Value* arg)->Value* {if(((ComplexValue*)arg)->aggregatedValues.size() == 0) throw std::runtime_error("tl(End)"); return ((ComplexValue*)(((ComplexValue*)arg)->aggregatedValues[0]))->aggregatedValues[1];}, Type(COMPLEX, "list",std::vector<Type>{Type(POLYMORPHIC, "'a")}), Type(COMPLEX, "list",std::vector<Type>{Type(POLYMORPHIC, "'a")}) ));

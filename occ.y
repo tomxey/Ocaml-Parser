@@ -60,6 +60,7 @@ extern "C" FILE *yyin;
 %type   <let_statement> let_statement
 
 %type   <comma_separated_expressions>   comma_separated_expressions
+%type   <comma_separated_expressions>   semicolon_separated_expressions
 %type   <expression>    tuple
 %type   <type>          tuple_type
 %type   <types>         asterisk_separated_types
@@ -87,13 +88,14 @@ extern "C" FILE *yyin;
 %left   INFIX_OP
 %left	'+' '-'
 %left	'*' '/'
+%right LIST_CONS
 
 %right   '|' ','
 
 %left IDENTIFIER INTEGER_LITERAL STRING_LITERAL FLOAT_LITERAL VALUE_CONSTRUCTOR POLYMORPHIC_TYPE BOOLEAN_LITERAL
 
 %right PREFIX_OP
-%left '(' ')'
+%left '(' ')' '[' ']'
 %left FUNAPPLY
 %left SEMIC2
 
@@ -164,6 +166,7 @@ exp:        pattern             { $$ = $1; }
         |   IF exp THEN exp ELSE exp    { $$ = new Conditional($2, $4, $6); }
         |   FUNCTION IDENTIFIER INTO exp    { $$ = new Function(new Identifier(*$2), $4);}
         |   MATCH exp WITH patterns_and_cases   { $$ = new MatchWith($2, *$4); delete $4; }
+        |   exp LIST_CONS exp   { $$ = new FunctionCall(new Identifier("Elem"), new TupleCreation(new std::vector<Expression*>{$1, $3})); }
         |   '(' exp ')'   { $$ = $2; }
         ;
 
@@ -176,6 +179,10 @@ tuple:  '(' comma_separated_expressions ')'     { $$ = new TupleCreation($2); }
 comma_separated_expressions:    exp ',' exp     { $$ = new vector<Expression*>{$1, $3}; }
                            |    comma_separated_expressions ',' exp     { $$ = $1; $$->push_back($3); }
                            ;
+
+semicolon_separated_expressions:    exp     { $$ = new vector<Expression*>{$1}; }
+                               |    semicolon_separated_expressions ';' exp     { $$ = $1; $$->push_back($3); }
+                               ;
 
 let_statement:  LET RECS pattern '=' exp  { $$ = new Let($3, $5, $2); }
              ;
@@ -191,6 +198,9 @@ pattern:    INTEGER_LITERAL	{ $$ = new Integer($1); }
         |   IDENTIFIER          { $$ = new Identifier( *$1 ); }
         |   BOOLEAN_LITERAL     { $$ = new Bool( $1 ); }
         |   VALUE_CONSTRUCTOR pattern   %prec FUNAPPLY    { $$ = new FunctionCall(new Identifier(*$1), $2); delete $1; }
+        |   '[' ']'             { $$ = new Identifier("End"); }
+        |   pattern LIST_CONS pattern   { $$ = new FunctionCall(new Identifier("Elem"), new TupleCreation(new std::vector<Expression*>{$1, $3})); }
+        |   '[' semicolon_separated_expressions ']'   { $$ = new Identifier("End"); for(auto it=$2->rbegin();it!=$2->rend();++it) $$ = new FunctionCall(new Identifier("Elem"), new TupleCreation(new std::vector<Expression*>{*it, $$})); }
         |   '(' pattern ')'   { $$ = $2; }
         |   tuple               {  }
         ;
