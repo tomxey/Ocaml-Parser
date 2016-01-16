@@ -51,7 +51,7 @@ prefix_op       [\!\?\~]+
 {value_constructor}     { yylval.string_val = new std::string(yytext); return VALUE_CONSTRUCTOR; }
 {polymorphic_type}      { yylval.string_val = new std::string(yytext); return POLYMORPHIC_TYPE; }
 
-\([ ]*{operator}*[ ]*\)           { const char *begin, *end; begin = yytext + 1; while( *begin == ' ' ) begin++; end = begin; while( *end != ' ' && *end != ')' ) end++;
+\([ ]*{operator}+[ ]*\)           { const char *begin, *end; begin = yytext + 1; while( *begin == ' ' ) begin++; end = begin; while( *end != ' ' && *end != ')' ) end++;
                                         yylval.string_val = new std::string(begin, end - begin); return IDENTIFIER;}
 "::"                        { yylval.string_val = new std::string(yytext); return LIST_CONS; }
 [\(\)\{\}:;,\|\+\-\*/=\[\]]   { return yytext[0]; }

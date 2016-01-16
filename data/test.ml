@@ -47,3 +47,17 @@ in fh 1;;
 
 let rec gen_list = function a -> function b -> function f -> if a >= b then [] else (f a)::(gen_list (a+1) b f);;
 gen_list 0 91 (function i -> sin ((float_of_int i) *. 3.14 /. 90.));;
+
+type 'a bt = Empty | Node of 'a * 'a bt * 'a bt;;
+let t = Node(1,Node(2,Empty,Node(3,Empty,Empty)),Empty);;
+let rec nodes = function n -> match n with Empty -> 0 | Node(_,t1,t2) -> 1 + nodes t1 + nodes t2;;
+
+type 'a bt = Empty | Node of 'a * 'a bt * 'a bt;;
+let rec append = function xs -> function ys -> match (xs,ys) with ([],_) -> ys | (x::tx,_) -> Elem(x, append tx ys);;
+let (@) = append;;
+
+let rec preorder = function n -> match n with Node(v,l,r) -> (v::((preorder l) @ (preorder r))) | Empty -> [];;
+let rec preorder = function n -> match n with Node(v,l,r) -> Elem(v,(preorder l) @ (preorder r)) | Empty -> [];;
+
+type a = A of (unit -> unit);;
+A(function u -> if u = () then () else failwith "wtf");;

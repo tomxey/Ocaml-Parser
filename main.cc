@@ -31,6 +31,8 @@ int main(int argc, char **argv)
     ParseEssentials::toplevel_environment.addType(new TypeDefAST("list", std::vector<std::string>{"'a"}, std::vector<std::pair<std::string, Type> >{
                                                                      std::pair<std::string, Type>("End", Type()),
                                                                      std::pair<std::string, Type>("Elem", Type(COMPLEX, "2tuple", std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(COMPLEX, "list", std::vector<Type>{Type(POLYMORPHIC, "'a")})})) } ));;
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("unit", std::vector<std::string>(), std::vector<std::pair<std::string, Type> >{ std::pair<std::string, Type>("Unit", Type()) }));
+    ParseEssentials::toplevel_environment.addType(new TypeDefAST("<fun>", std::vector<std::string>{"'a", "'b"}));
 
     //ParseEssentials::toplevel_environment.addValue(Identifier("print_int"), new BuiltIn_Function([](Value* arg)->Value* {std::cout << ((Integer*)arg)->value << std::endl; return arg;}, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int") ));
     DEFINE_CURRIED_FUNCTION("+",a, b, return new Integer(((Integer*)a)->value + ((Integer*)b)->value);, Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"), Type(PRIMITIVE, "int"));
