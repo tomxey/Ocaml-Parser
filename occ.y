@@ -29,6 +29,7 @@ extern "C" FILE *yyin;
   vector< pair<Expression*, Expression*> >*     patterns_and_cases;
   TypeDefAST*   type_def;
   std::vector<TypeDefAST*>* type_defs;
+  std::vector< std::pair<Expression*,Expression*> >*    let_cases;
 }
 
 %start	input 
@@ -71,6 +72,8 @@ extern "C" FILE *yyin;
 
 %type   <type_def>  type_def
 %type   <type_defs> type_defs
+
+%type   <let_cases> let_cases
 // %left associative a + b + c = (a + b) + c
 // %right associative ...
 // %nonassoc    a + b + c = forbidden
@@ -198,8 +201,13 @@ semicolon_separated_expressions:    exp     { $$ = new vector<Expression*>{$1}; 
                                |    semicolon_separated_expressions ';' exp     { $$ = $1; $$->push_back($3); }
                                ;
 
-let_statement:  LET RECS pattern '=' exp  { $$ = new Let($3, $5, $2); }
+let_statement:  LET RECS let_cases  { $$ = new Let($3, $2); }
              ;
+
+let_cases:  pattern '=' exp     { $$ = new vector< pair<Expression*, Expression*> >{ pair<Expression*,Expression*>($1, $3) }; }
+         |  let_cases AND pattern '=' exp  { $$ = $1; $$->push_back( pair<Expression*,Expression*>($3, $5) ); }
+         ;
+
 
 RECS:   /* empty */ { $$ = false; }
         | REC       { $$ = true; }

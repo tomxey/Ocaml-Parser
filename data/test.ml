@@ -9,8 +9,8 @@ one 1;;
 two 1;;
 three 1;;
 
-let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + (muladd a b (n-1));;
-let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + muladd a b (n-1);;
+let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + (muladd a b (n- 1));;
+let rec muladd = function a -> function b -> function n -> if n = 0 then 0 else a + b + muladd a b (n- 1);;
 let x = if 1 + 1 = 2 + 0 then 2 + 2 else 2 + 3;;
 
 type 'a list = End | Elem of ('a * (('a) list));;
@@ -73,3 +73,6 @@ ltake(5,lfrom 30);;
 
 type 'a test = ONLA of 'a | OTHA of 'a best
 and 'a best = ONLB of 'a | OTHB of 'a test;;
+
+let rec evenR = function n -> if n=0 then true else oddR(n - 1)
+and oddR = function n -> if n=0 then false else evenR(n - 1);;

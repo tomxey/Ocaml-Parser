@@ -148,19 +148,24 @@ Value *TupleCreation::execute(Environment &env)
 Value *Let::execute(Environment &env)
 {
     if(recursive){
-        if(expression->isNonBuiltInFunction() && pattern->isIdentifier()){
-            Function* function_copy = new Function(*(Function*)expression);
-            env.addValue(*(Identifier*)pattern, static_cast<Value*>(function_copy));
-            function_copy->env_copy = env;
-            // im not executing function_copy as it will return another copy
-            return nullptr;
+        std::vector<Function*> function_copies(patterns.size());
+        for(unsigned int i = 0;i<patterns.size();++i){
+            function_copies[i] = new Function(*(Function*)expressions[i]);
+            env.addValue(*(Identifier*)patterns[i], function_copies[i]);
         }
-        else throw std::runtime_error("rec keyword can only be used to declare functions");
+
+        for(unsigned int i = 0;i<patterns.size();++i){
+            function_copies[i]->env_copy = env;
+        }
+        // im not executing function_copy as it will return another copy
+        return nullptr;
     }
     else{
-        Value* expression_result = expression->execute(env);
-        if(pattern_value->matchWithValue(expression_result)) pattern_value->applyMatch(expression_result, env);
-        else throw std::runtime_error("Failed to match!");
+        for(unsigned int i = 0;i<patterns.size();++i){
+            Value* expression_result = expressions[i]->execute(env);
+            if(pattern_values[i]->matchWithValue(expression_result)) pattern_values[i]->applyMatch(expression_result, env);
+            else throw std::runtime_error("Failed to match!");
+        }
         return nullptr;
     }
 } // Let::execute
