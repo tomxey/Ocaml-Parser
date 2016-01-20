@@ -27,6 +27,8 @@ extern "C" FILE *yyin;
   Let*      let_statement;
   vector<Expression*>* comma_separated_expressions;
   vector< pair<Expression*, Expression*> >*     patterns_and_cases;
+  TypeDefAST*   type_def;
+  std::vector<TypeDefAST*>* type_defs;
 }
 
 %start	input 
@@ -66,12 +68,16 @@ extern "C" FILE *yyin;
 %type   <types>         asterisk_separated_types
 
 %type   <patterns_and_cases>    patterns_and_cases
+
+%type   <type_def>  type_def
+%type   <type_defs> type_defs
 // %left associative a + b + c = (a + b) + c
 // %right associative ...
 // %nonassoc    a + b + c = forbidden
 // the further the op is declared here, the higher precedence it has
 
 %nonassoc   TYPE OF
+%left   AND
 
 %right	FUNCTION
 %right	INTO
@@ -111,9 +117,15 @@ statements:     statement               { $$ = new vector<Statement*>{$1}; }
 
 statement:      exp SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
         |       let_statement SEMIC2 { $$ = $1; ParseEssentials::parseStatement($$); }
-        |       TYPE polymorphic_types_list IDENTIFIER '=' value_constructors_definitions SEMIC2 { $$ = new TypeDefAST(*$3, *$2, *$5); delete $2; delete $3; delete $5; ParseEssentials::parseStatement($$); }
+        |       TYPE type_defs SEMIC2   {$$ = new TypeDefsAST(*$2); ParseEssentials::parseStatement($$); }
         ;
 
+type_defs:  type_def    { $$ = new std::vector<TypeDefAST*>{$1}; }
+         |  type_defs AND type_def  { $$ = $1; $$->push_back($3); }
+         ;
+
+type_def:   polymorphic_types_list IDENTIFIER '=' value_constructors_definitions { $$ = new TypeDefAST(*$2, *$1, *$4); delete $1; delete $2; delete $4;}
+        ;
 
 polymorphic_types_list:     /* empty */     { $$ = new vector<string>(); }
                       |    POLYMORPHIC_TYPE     { $$ = new vector<string>{*$1}; delete $1; }

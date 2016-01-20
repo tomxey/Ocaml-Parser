@@ -53,9 +53,26 @@ public:
     virtual std::string print(int indents){
         return std::string(indents, ' ') + "TypeDef: " + type_name + "\n";
     }
-    virtual Type deduceType(Environment& env, Type mostGeneralExpected){
-        return env.addType(this);
+    virtual Type deduceType(Environment& env, Type);
+
+    virtual Value* execute(Environment& env){
+        return nullptr; // return nothing i guess
     }
+};
+
+class TypeDefsAST : public Statement{
+public:
+    TypeDefsAST(std::vector<TypeDefAST*> typeDefs): typeDefs(typeDefs){}
+    std::vector<TypeDefAST*> typeDefs;
+
+    virtual std::string print(int indents){
+        std::string result = std::string(indents, ' ') + "TypeDefs:\n";
+        for(TypeDefAST* def : typeDefs){
+            result += def->print(indents+1);
+        }
+        return result;
+    }
+    virtual Type deduceType(Environment& env, Type);
 
     virtual Value* execute(Environment& env){
         return nullptr; // return nothing i guess

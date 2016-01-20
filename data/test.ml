@@ -47,6 +47,7 @@ in fh 1;;
 
 let rec gen_list = function a -> function b -> function f -> if a >= b then [] else (f a)::(gen_list (a+1) b f);;
 gen_list 0 91 (function i -> sin ((float_of_int i) *. 3.14 /. 90.));;
+gen_list 0 11 (function i -> sin ((float_of_int (i*9)) *. 3.14 /. 90.));;
 
 type 'a bt = Empty | Node of 'a * 'a bt * 'a bt;;
 let t = Node(1,Node(2,Empty,Node(3,Empty,Empty)),Empty);;
@@ -61,3 +62,14 @@ let rec preorder = function n -> match n with Node(v,l,r) -> Elem(v,(preorder l)
 
 type a = A of (unit -> unit);;
 A(function u -> if u = () then () else failwith "wtf");;
+
+
+type 'a llist = LNil | LCons of 'a * (unit -> 'a llist);;
+let lhd = function l -> match l with LNil -> failwith "lhd" | LCons(x,_) -> x;;
+let ltl = function l -> match l with LNil -> failwith "ltl" | LCons (_,xf) -> xf();;
+let rec lfrom = function k -> LCons(k, function u -> let () = u in lfrom (k+1));;
+let rec ltake = function nl -> match nl with (0, _) -> [] | (_, LNil) -> [] | (n,LCons(x,xf)) -> x::(ltake(n - 1, xf()));;
+ltake(5,lfrom 30);;
+
+type 'a test = ONLA of 'a | OTHA of 'a best
+and 'a best = ONLB of 'a | OTHB of 'a test;;

@@ -41,6 +41,7 @@ prefix_op       [\!\?\~]+
 "of"            { yylval.string_val = new std::string(yytext); return OF; }
 "match"            { yylval.string_val = new std::string(yytext); return MATCH; }
 "with"            { yylval.string_val = new std::string(yytext); return WITH; }
+"and"            { yylval.string_val = new std::string(yytext); return AND; }
 ";;"            { yylval.string_val = new std::string(yytext); return SEMIC2; }
 
 {ident}         { yylval.string_val = new std::string(yytext); return IDENTIFIER; }

@@ -119,75 +119,85 @@ void Environment::printNewValues()
     }
 }
 
-Type Environment::addType(TypeDefAST *type_def)
+void Environment::addTypes(std::vector<TypeDefAST*> type_defs)
 {
-    std::vector<Type> type_parameters;
-    std::set<std::string> parameters_set;
-    for(std::string param : type_def->polymorphic_parameters_names){
-        type_parameters.push_back(Type(POLYMORPHIC, param));
-        parameters_set.insert(param);
-        if(param[0] != '\'') throw std::runtime_error("bad polymorphic parameter name: " + param);
-    }
-    if(parameters_set.size() != type_parameters.size()) throw std::runtime_error("parameter name used twice in type definition");
+    std::vector< std::set<std::string> > types_parameters_sets(type_defs.size());
+    std::vector<Type> types_added(type_defs.size());
 
-    Type type_added(COMPLEX, type_def->type_name, type_parameters);
+    for(unsigned int i=0;i<type_defs.size();++i){
+        TypeDefAST* def = type_defs[i];
+        std::vector<Type> type_parameters;
+        for(std::string param : def->polymorphic_parameters_names){
+            type_parameters.push_back(Type(POLYMORPHIC, param));
+            types_parameters_sets[i].insert(param);
+            if(param[0] != '\'') throw std::runtime_error("bad polymorphic parameter name: " + param);
+        }
+        if(types_parameters_sets[i].size() != type_parameters.size()) throw std::runtime_error("parameter name used twice in type definition");
 
-    if(type_constructors.find(Identifier(type_def->type_name)) == type_constructors.end()){
-        type_constructors[Identifier(type_def->type_name)] = type_added;
-    }
-    else{
-        throw std::runtime_error("type " + type_def->type_name + " already exists");
-    }
+        types_added[i] = Type(COMPLEX, def->type_name, type_parameters);
 
-    // check if all types in Value Constructors exist
-
-    std::deque<Type*> Q;
-    for(std::pair<std::string, Type>& pair : type_def->constructors){
-        if(pair.second.type_enum != UNDETERMINED)  Q.push_back(&pair.second);
-    }
-
-    while(!Q.empty()){
-        Type* current = Q.front(); Q.pop_front();
-        if(current->type_enum == POLYMORPHIC){
-            if(parameters_set.find(current->type_name) == parameters_set.end()) throw std::runtime_error("using nonexisting type: " + current->type_name);
+        if(type_constructors.find(Identifier(def->type_name)) == type_constructors.end()){
+            type_constructors[Identifier(def->type_name)] = types_added[i];
         }
         else{
-            Type type_constructed = getType(Identifier(current->type_name));
-            if(type_constructed.type_parameters.size() == current->type_parameters.size()){
-                for(Type& type : current->type_parameters){
-                    Q.push_back(&type);
-                }
+            throw std::runtime_error("type " + def->type_name + " already exists");
+        }
+    }
+
+    for(unsigned int i=0;i<type_defs.size();++i){
+        TypeDefAST* def = type_defs[i];
+        // check if all types in Value Constructors exist
+        std::deque<Type*> Q;
+        for(std::pair<std::string, Type>& pair : def->constructors){
+            if(pair.second.type_enum != UNDETERMINED)  Q.push_back(&pair.second);
+        }
+
+        while(!Q.empty()){
+            Type* current = Q.front(); Q.pop_front();
+            if(current->type_enum == POLYMORPHIC){
+                if(types_parameters_sets[i].find(current->type_name) == types_parameters_sets[i].end()) throw std::runtime_error("using nonexisting type: " + current->type_name);
             }
-            else throw std::runtime_error("wrong number of parameters in type constructor: " + type_constructed.type_name);
-        }
-    } // while Q
+            else{
+                Type type_constructed = getType(Identifier(current->type_name));
+                if(type_constructed.type_parameters.size() == current->type_parameters.size()){
+                    for(Type& type : current->type_parameters){
+                        Q.push_back(&type);
+                    }
+                }
+                else throw std::runtime_error("wrong number of parameters in type constructor: " + type_constructed.type_name);
+            }
+        } // while Q
 
-    /// now it is time to add Value Constructors
-    /// constructors wit argument will be functions, no-argument constructors will be ordinary variables
-/**
-    ParseEssentials::toplevel_environment.addValue(Identifier("fst"), // Constructor name
-                                               new BuiltIn_Function([](Value* arg)->Value* //
-                                                {return ((ComplexValue*)arg)->aggregatedValues[0];}, // return new complex value of type with specified constructor name, and argument as aggregatedValue
-                                               Type(COMPLEX, "pair", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), // argument type
-                                               Type(POLYMORPHIC, "'a") )); // return complex type
-**/
+        /// now it is time to add Value Constructors
+        /// constructors wit argument will be functions, no-argument constructors will be ordinary variables
+    /**
+        ParseEssentials::toplevel_environment.addValue(Identifier("fst"), // Constructor name
+                                                   new BuiltIn_Function([](Value* arg)->Value* //
+                                                    {return ((ComplexValue*)arg)->aggregatedValues[0];}, // return new complex value of type with specified constructor name, and argument as aggregatedValue
+                                                   Type(COMPLEX, "pair", "",std::vector<Type>{Type(POLYMORPHIC, "'a"), Type(POLYMORPHIC, "'b")}), // argument type
+                                                   Type(POLYMORPHIC, "'a") )); // return complex type
+    **/
+        Type type_added = types_added[i];
+        for(std::pair<std::string, Type>& pair : def->constructors){
+            if(valueExists(Identifier(pair.first))) throw std::runtime_error("Value " + pair.first + " already exists in the environment");
 
-    for(std::pair<std::string, Type>& pair : type_def->constructors){
-        if(valueExists(Identifier(pair.first))) throw std::runtime_error("Value " + pair.first + " already exists in the environment");
+            if(pair.second.type_enum == UNDETERMINED){
+                addValue(Identifier(pair.first), new ComplexValue( type_added , pair.first));
+            }
+            else{
+                ParseEssentials::toplevel_environment.addValue(Identifier(pair.first), // Constructor name
+                                                       new BuiltIn_Function([type_added,pair](Value* arg)->Value* //
+                                                        {return new ComplexValue(type_added, pair.first, std::vector<Value*>{arg});}, // return new complex value of type with specified constructor name, and argument as aggregatedValue
+                                                       pair.second, // argument type
+                                                       type_added )); // return complex type
+            }
+        } // for
+    }
+}
 
-        if(pair.second.type_enum == UNDETERMINED){
-            addValue(Identifier(pair.first), new ComplexValue( type_added , pair.first));
-        }
-        else{
-            ParseEssentials::toplevel_environment.addValue(Identifier(pair.first), // Constructor name
-                                                   new BuiltIn_Function([type_added,pair](Value* arg)->Value* //
-                                                    {return new ComplexValue(type_added, pair.first, std::vector<Value*>{arg});}, // return new complex value of type with specified constructor name, and argument as aggregatedValue
-                                                   pair.second, // argument type
-                                                   type_added )); // return complex type
-        }
-    } // for
-
-    return type_added;
+void Environment::addType(TypeDefAST *type_def)
+{
+    addTypes(std::vector<TypeDefAST*>{type_def});
 } // addType
 
 Type Environment::getType(Identifier identifier)

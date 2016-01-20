@@ -45,7 +45,8 @@ public:
     std::map< Identifier, std::list<Value*> > variables;
     std::map< Identifier, Type > type_constructors;
 
-    Type addType(TypeDefAST* type_def);
+    void addTypes(std::vector<TypeDefAST*> type_defs);
+    void addType(TypeDefAST* type_def);
     Type getType(Identifier identifier);
 
     void cleanupAfterStatement();

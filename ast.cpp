@@ -164,3 +164,17 @@ Value *Let::execute(Environment &env)
         return nullptr;
     }
 } // Let::execute
+
+
+Type TypeDefsAST::deduceType(Environment &env, Type)
+{
+    env.addTypes(typeDefs);
+    return env.getType(Identifier(typeDefs[0]->type_name));
+}
+
+
+Type TypeDefAST::deduceType(Environment &env, Type)
+{
+    env.addType(this);
+    return env.getType(Identifier(this->type_name));
+}
