@@ -6,7 +6,6 @@
 #include <list>
 #include <algorithm>
 #include <vector>
-#include "value.h"
 #include "vartype.h"
 
 class Identifier;

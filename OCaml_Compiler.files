@@ -10,7 +10,5 @@ occ.lex
 occ.y
 parseessentials.cpp
 parseessentials.h
-value.cpp
-value.h
 vartype.cpp
 vartype.h

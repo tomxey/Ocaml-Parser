@@ -1,6 +1,6 @@
 # Makefile
 
-OBJS	= bison.o lex.o main.o value.o ast.o parseessentials.o vartype.o environment.o
+OBJS	= bison.o lex.o main.o ast.o parseessentials.o vartype.o environment.o
 
 GPP	= g++
 GCC	= g++
@@ -10,9 +10,6 @@ all:	occ
 
 occ:		$(OBJS)
 		$(GCC) $(CFLAGS) $(OBJS) -o occ -lfl
-
-value.o:	value.cpp value.h
-		$(GPP) $(CFLAGS) -c value.cpp -o value.o
 
 ast.o:		ast.cpp ast.h
 		$(GPP) $(CFLAGS) -c ast.cpp -o ast.o

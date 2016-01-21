@@ -11,7 +11,6 @@
 #include <sstream>
 #include "environment.h"
 #include "vartype.h"
-#include "value.h"
 #include "parseessentials.h"
 
 //#define USE_STATICALLY_DEDUCED_TYPES
@@ -206,6 +205,7 @@ public:
 class Let : public Statement{
 public:
     Let(Expression* pattern, Expression* expression, bool recursive): patterns(1, pattern), expressions(1, expression), pattern_values(1), recursive(recursive){}
+
     Let(std::vector< std::pair<Expression*,Expression*> >* let_cases, bool recursive): recursive(recursive){
         for(std::pair<Expression*,Expression*> pat_exp : *let_cases){
             patterns.push_back(pat_exp.first);
